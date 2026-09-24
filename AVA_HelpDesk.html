@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AVA Help Desk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<script>
+/* =====================================================================
+ *  ONE-TIME SETTING: paste your Apps Script Web-app URL (ends in /exec)
+ *  between the quotes before sharing this file with staff.
+ *  If left blank, the app asks for it on first open.
+ * ===================================================================== */
+const API_URL = 'https://script.google.com/macros/s/AKfycbyfB6eeE-a2o5rRY-IS12v4VHwxw_BXL_kQ3Wa0ayCtwzea6RTjqiMih4H_Hjv7l4tD3Q/exec';
+</script>
+<style>
+:root{
+  --navy:#0e2a47; --navy-2:#153659; --navy-line:#24476d;
+  --green:#2e9e6b; --green-soft:#e6f5ee; --green-ink:#1f7a51; --mint:#7fd6a8;
+  --bg:#f4f6f9; --card:#ffffff; --line:#e3e8ef; --line-2:#eef1f5;
+  --ink:#10233a; --ink-2:#4a5b70; --ink-3:#8594a7;
+  --red:#c62f2f; --red-soft:#fdecec; --amber:#b86e00; --amber-soft:#fff4e0;
+  --blue:#1d5fbf; --blue-soft:#e8f0fc; --violet:#6b3fb8; --violet-soft:#f1ebfb;
+  --radius:12px; --shadow:0 1px 2px rgba(16,35,58,.06),0 2px 8px rgba(16,35,58,.04);
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{font-family:Inter,"Segoe UI",system-ui,-apple-system,Arial,sans-serif;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.45}
+button{font-family:inherit;font-size:inherit;cursor:pointer}
+input,select,textarea{font-family:inherit;font-size:14px;color:var(--ink)}
+a{color:var(--blue)}
+.mono{font-family:"JetBrains Mono",ui-monospace,Consolas,monospace}
+svg.i{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+
+/* ---------- layout ---------- */
+#shell{display:flex;min-height:100vh}
+aside{width:260px;background:var(--navy);color:#dfe8f2;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;flex:none;border-right:3px solid var(--green)}
+.brand{padding:18px 20px 16px;font-size:21px;font-weight:600;color:#fff;border-bottom:1px solid var(--navy-line)}
+.brand b{color:var(--mint);font-weight:600}
+.brand small{display:block;font-size:11.5px;color:#9fb3c8;font-weight:500;margin-top:2px;letter-spacing:.2px}
+nav{padding:14px 10px;display:flex;flex-direction:column;gap:8px}
+.nav{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:10px;border:1px solid var(--navy-line);background:transparent;color:#dfe8f2;text-align:left;font-weight:500;width:100%}
+.nav:hover{background:var(--navy-2)}
+.nav.on{background:#1d4a44;border-color:#2b6b5d;color:#fff}
+.nav.raise{color:var(--mint)}
+.nav .cnt{margin-left:auto;background:var(--mint);color:var(--navy);font-size:11.5px;font-weight:700;border-radius:20px;padding:1px 8px}
+.me{margin-top:auto;padding:14px 18px;border-top:1px solid var(--navy-line);font-size:12.5px;color:#a9bbcd}
+.me b{display:block;color:#fff;font-size:14px}
+.me .btns{display:flex;gap:6px;margin-top:10px}
+.me button{background:transparent;border:1px solid var(--navy-line);color:#cfdbe7;border-radius:8px;padding:5px 9px;font-size:12px;display:flex;align-items:center;gap:5px}
+.me button:hover{background:var(--navy-2)}
+.me button svg{width:14px;height:14px}
+main{flex:1;min-width:0}
+.top{height:58px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:0 24px;position:sticky;top:0;z-index:5}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:20px;padding:6px 13px;background:#fff;color:var(--ink-2);font-size:13px}
+.chip.off{background:var(--amber-soft);border-color:#f0d29b;color:var(--amber)}
+.chip svg{width:15px;height:15px}
+.spin svg{animation:sp 1s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.bell{position:relative;width:40px;height:40px;border:1px solid var(--line);border-radius:10px;display:grid;place-items:center;background:#fff;color:var(--ink-2)}
+.bell .dot{position:absolute;top:-6px;right:-6px;background:var(--green);color:#fff;font-size:10.5px;font-weight:700;border-radius:10px;padding:1px 6px}
+#content{padding:34px 40px 60px;max-width:1180px}
+h1{font-size:30px;margin:0 0 6px;font-weight:700;letter-spacing:-.4px;color:var(--navy)}
+.sub{color:var(--ink-2);font-size:15.5px;margin:0 0 26px}
+.empty{border:1px dashed var(--line);border-radius:10px;padding:18px;color:var(--ink-3);background:#fafbfd}
+
+/* ---------- sections & groups ---------- */
+.sec{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);margin-bottom:22px;overflow:hidden}
+.sec-h{display:flex;align-items:center;gap:12px;padding:16px 22px;border-bottom:1px solid var(--line-2);cursor:pointer;user-select:none}
+.sec-h .chev{color:var(--ink-3);transition:transform .15s}
+.sec.closed .chev{transform:rotate(-90deg)}
+.sec.closed .sec-b{display:none}
+.sec-h h2{margin:0;font-size:18px;color:var(--navy);font-weight:600}
+.sec-h .n{background:var(--navy);color:#fff;border-radius:20px;min-width:24px;height:24px;display:grid;place-items:center;font-size:12px;font-weight:700;padding:0 7px}
+.sec-h .n.zero{background:var(--line-2);color:var(--ink-3)}
+.sec-h .d{color:var(--ink-2)}
+.sec-b{padding:18px 22px}
+.grp{border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:14px}
+.grp:last-child{margin-bottom:0}
+.grp-h{display:flex;align-items:center;gap:10px;background:#f7f9fb;padding:10px 16px;border-bottom:1px solid var(--line)}
+.av{width:30px;height:30px;border-radius:50%;background:var(--navy);color:#fff;display:grid;place-items:center;font-size:11.5px;font-weight:700;flex:none}
+.grp-h .nm{font-weight:600;color:var(--navy);font-size:15px}
+.grp-h .rl{font-size:11.5px;letter-spacing:.6px;color:var(--ink-2);text-transform:uppercase}
+.grp-h .c{margin-left:auto;border:1px solid var(--line);border-radius:20px;padding:0 8px;font-size:12px;background:#fff;color:var(--ink-2)}
+.batch{display:flex;align-items:center;gap:14px;margin:18px 0 12px}
+.batch .tag{font-family:"JetBrains Mono",monospace;font-size:12px;letter-spacing:1.5px;color:var(--ink-2);border-bottom:1px solid var(--line);padding-bottom:6px}
+.batch .t{color:var(--ink-2)}
+.batch .c{margin-left:auto;border:1px solid var(--line);border-radius:20px;padding:0 8px;font-size:12px;color:var(--ink-2)}
+
+/* ---------- slip row ---------- */
+.row{display:grid;grid-template-columns:120px 1fr auto 96px auto;align-items:center;gap:14px;padding:12px 16px;border-bottom:1px solid var(--line-2);position:relative}
+.row:last-child{border-bottom:0}
+.row.late::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--red)}
+.row:hover{background:#fbfcfd}
+.pill{display:inline-block;border-radius:20px;padding:2px 11px;font-size:12.5px;font-weight:500;border:1px solid transparent;white-space:nowrap}
+.p-open{background:var(--green-soft);color:var(--green-ink)}
+.p-answered{background:var(--blue-soft);color:var(--blue)}
+.p-closed{background:var(--line-2);color:var(--ink-2)}
+.p-auto{background:var(--violet-soft);color:var(--violet)}
+.p-monday{background:#f1f3f6;color:var(--ink-2);border-color:var(--line)}
+.p-queued{background:var(--amber-soft);color:var(--amber)}
+.ttl{min-width:0}
+.ttl .t{font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ttl .t .q{font-weight:500;color:var(--ink-2)}
+.ttl .m{font-size:12.5px;color:var(--ink-3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ttl .m b{color:var(--green-ink);font-weight:600}
+.pri{font-size:11.5px;font-weight:700;letter-spacing:.4px;border-radius:5px;padding:2px 7px;border:1px solid}
+.pri-HIGH{color:var(--red);background:var(--red-soft);border-color:#f3c2c2}
+.pri-MEDIUM{color:var(--blue);background:var(--blue-soft);border-color:#c5d8f5}
+.pri-LOW{color:var(--ink-2);background:var(--line-2);border-color:var(--line)}
+.due{font-family:"JetBrains Mono",monospace;font-size:12.5px;color:var(--ink-2);text-align:right}
+.due.late{color:var(--red);font-weight:500}
+.acts{display:flex;gap:6px}
+.ib{width:34px;height:32px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink-2);display:grid;place-items:center}
+.ib:hover{background:#f3f6f9}
+.ib.ok{background:var(--green-soft);border-color:#bfe6d2;color:var(--green-ink)}
+.ib.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.ib[disabled]{opacity:.35;cursor:default}
+.ib svg{width:16px;height:16px}
+
+/* ---------- forms ---------- */
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:24px 26px;margin-bottom:20px}
+.card h3{margin:0 0 4px;font-size:16px;color:var(--navy)}
+.card .hint{color:var(--ink-2);font-size:13px;margin:0 0 16px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.f{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.f label{font-size:12.5px;font-weight:600;color:var(--ink-2);letter-spacing:.2px}
+.f input,.f select,.f textarea{border:1px solid #d5dde7;border-radius:9px;padding:10px 12px;background:#fff;outline:none;width:100%}
+.f textarea{resize:vertical;min-height:84px}
+.f input:focus,.f select:focus,.f textarea:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(46,158,107,.15)}
+.f .ct{font-size:11.5px;color:var(--ink-3);text-align:right}
+.f .ct.bad{color:var(--red)}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.seg button{border:1.5px solid var(--line);background:#fff;border-radius:11px;padding:12px 14px;text-align:left;color:var(--ink)}
+.seg button b{display:block;font-size:14.5px;margin-bottom:2px}
+.seg button span{font-size:12.5px;color:var(--ink-2)}
+.seg button.on{border-color:var(--green);background:var(--green-soft)}
+.must{border:1.5px solid #f0d29b;background:#fffaf0;border-radius:14px;padding:20px 22px;margin-bottom:20px}
+.must h3{color:var(--amber);margin:0 0 4px;font-size:16px;display:flex;align-items:center;gap:8px}
+.must .hint{color:#7a5a1f}
+.must .two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.must .tag{display:inline-block;background:var(--amber);color:#fff;font-size:11px;font-weight:700;border-radius:4px;padding:1px 6px;margin-right:6px}
+.btn{border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:9px;padding:10px 16px;font-weight:600;display:inline-flex;align-items:center;gap:8px}
+.btn:hover{background:#f5f7fa}
+.btn.pri{background:var(--green);border-color:var(--green);color:#fff}
+.btn.pri:hover{background:#278a5d}
+.btn.dark{background:var(--navy);border-color:var(--navy);color:#fff}
+.btn.sm{padding:6px 11px;font-size:13px}
+.btn[disabled]{opacity:.5;cursor:default}
+.bar{display:flex;gap:10px;justify-content:flex-end;align-items:center;flex-wrap:wrap}
+.faqhint{display:flex;align-items:center;gap:8px;color:var(--violet);background:var(--violet-soft);border-radius:9px;padding:9px 12px;font-size:13px;margin-bottom:14px}
+.err{background:var(--red-soft);color:var(--red);border-radius:9px;padding:10px 13px;margin-bottom:14px;font-size:13.5px}
+
+/* ---------- FAQ match panel ---------- */
+.match{border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:12px;background:#fff}
+.match .sc{float:right;font-size:12px;color:var(--violet);background:var(--violet-soft);border-radius:20px;padding:1px 9px}
+.match h4{margin:0 0 8px;font-size:15px;color:var(--navy)}
+.match .a{white-space:pre-wrap;color:var(--ink);background:#f7f9fb;border-radius:8px;padding:12px;margin-bottom:12px}
+.match.strong{border-color:#c9b6ec;box-shadow:0 0 0 3px rgba(107,63,184,.08)}
+
+/* ---------- drawer ---------- */
+#ov{position:fixed;inset:0;background:rgba(14,42,71,.35);display:none;z-index:20}
+#ov.on{display:block}
+#drawer{position:fixed;top:0;right:0;bottom:0;width:min(720px,96vw);background:#fff;z-index:21;transform:translateX(102%);transition:transform .2s ease;display:flex;flex-direction:column;box-shadow:-10px 0 30px rgba(0,0,0,.12)}
+#drawer.on{transform:none}
+.dh{padding:18px 24px;border-bottom:1px solid var(--line);display:flex;gap:12px;align-items:flex-start}
+.dh .id{font-family:"JetBrains Mono",monospace;font-size:12px;color:var(--ink-3)}
+.dh h2{margin:4px 0 8px;font-size:19px;color:var(--navy)}
+.dh .x{margin-left:auto}
+.db{padding:20px 24px;overflow:auto;flex:1}
+.meta{display:grid;grid-template-columns:repeat(3,1fr);gap:10px 18px;margin-bottom:18px;font-size:13px}
+.meta div span{display:block;color:var(--ink-3);font-size:11.5px;text-transform:uppercase;letter-spacing:.5px}
+.qbox{white-space:pre-wrap;background:#f7f9fb;border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:16px}
+.prob{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px}
+.prob .p{border:1.5px solid #f0d29b;background:#fffaf0;border-radius:10px;padding:12px 14px;white-space:pre-wrap}
+.prob .p.right{border-color:var(--green);background:var(--green-soft)}
+.prob .p.wrong{border-color:#f3c2c2;background:#fff7f7}
+.prob .p b{display:block;color:var(--amber);font-size:12px;letter-spacing:.4px;text-transform:uppercase;margin-bottom:4px}
+.verd{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:6px 0 20px;font-size:13px;color:var(--ink-2)}
+.verd button{border:1px solid var(--line);background:#fff;border-radius:20px;padding:4px 12px;font-size:12.5px}
+.verd button.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.lbl{font-size:12px;letter-spacing:.6px;text-transform:uppercase;color:var(--ink-3);font-weight:600;margin:0 0 8px}
+.thread{display:flex;flex-direction:column;gap:10px;margin-bottom:18px}
+.msg{border-radius:10px;padding:10px 14px;max-width:88%;white-space:pre-wrap}
+.msg .w{font-size:12px;color:var(--ink-3);margin-bottom:3px}
+.msg.Answer{background:var(--green-soft);align-self:flex-start}
+.msg.Staff{background:var(--blue-soft);align-self:flex-end}
+.msg.FAQ{background:var(--violet-soft);align-self:flex-start}
+.msg.System{background:none;color:var(--ink-3);font-size:12.5px;align-self:center;padding:2px}
+.compose{border-top:1px solid var(--line);padding:16px 24px;background:#fafbfd}
+.compose textarea{width:100%;border:1px solid #d5dde7;border-radius:9px;padding:10px 12px;min-height:90px;resize:vertical;outline:none}
+.compose textarea:focus{border-color:var(--green)}
+.faqbox{border:1px dashed #c9b6ec;background:#fbf9fe;border-radius:10px;padding:12px 14px;margin-top:10px}
+.chk{display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--ink-2);margin-top:10px}
+
+/* ---------- tables ---------- */
+table.t{width:100%;border-collapse:collapse;font-size:13.5px}
+table.t th{text-align:left;font-size:11.5px;letter-spacing:.5px;text-transform:uppercase;color:var(--ink-3);font-weight:600;padding:8px 10px;border-bottom:1px solid var(--line)}
+table.t td{padding:10px;border-bottom:1px solid var(--line-2)}
+table.t td.n{text-align:right;font-variant-numeric:tabular-nums}
+.bar-m{height:8px;background:var(--line-2);border-radius:4px;overflow:hidden;width:110px;display:inline-block;vertical-align:middle;margin-right:8px}
+.bar-m i{display:block;height:100%;background:var(--green)}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.kpi{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+.kpi span{font-size:12px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.5px}
+.kpi b{display:block;font-size:26px;color:var(--navy);margin-top:4px}
+.tabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+.tabs button{border:1px solid var(--line);background:#fff;border-radius:20px;padding:6px 14px;font-size:13px;color:var(--ink-2)}
+.tabs button.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.search{display:flex;gap:10px;margin-bottom:18px}
+.search input{flex:1;border:1px solid #d5dde7;border-radius:10px;padding:11px 14px;outline:none}
+.faqi{border-bottom:1px solid var(--line-2);padding:14px 4px}
+.faqi:last-child{border-bottom:0}
+.faqi .q{font-weight:600;color:var(--navy);cursor:pointer;display:flex;gap:10px;align-items:baseline}
+.faqi .q small{font-weight:500;color:var(--ink-3);margin-left:auto;white-space:nowrap}
+.faqi .a{white-space:pre-wrap;color:var(--ink);margin-top:8px;background:#f7f9fb;border-radius:8px;padding:12px;display:none}
+.faqi.open .a{display:block}
+.cat{font-size:11px;background:var(--line-2);color:var(--ink-2);border-radius:4px;padding:1px 6px;font-weight:500}
+
+/* ---------- login ---------- */
+#login{min-height:100vh;display:grid;place-items:center;background:linear-gradient(160deg,var(--navy) 0%,#123a5e 60%,#185244 100%)}
+.lg{background:#fff;border-radius:16px;padding:34px 34px 28px;width:min(400px,92vw);box-shadow:0 20px 50px rgba(0,0,0,.25)}
+.lg .brand{color:var(--navy);border:0;padding:0 0 4px;font-size:26px}
+.lg .brand b{color:var(--green)}
+.lg p{color:var(--ink-2);margin:0 0 22px}
+.lg .btn{width:100%;justify-content:center;padding:12px}
+.lg .small{font-size:12px;color:var(--ink-3);margin-top:16px;text-align:center}
+.lg .small a{cursor:pointer}
+
+#toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--navy);color:#fff;padding:11px 18px;border-radius:10px;font-size:13.5px;opacity:0;transition:.2s;z-index:40;pointer-events:none;max-width:90vw}
+#toast.on{opacity:1;transform:translateX(-50%)}
+#toast.bad{background:var(--red)}
+.hide{display:none!important}
+
+@media (max-width:900px){
+  #shell{flex-direction:column}
+  aside{width:100%;height:auto;position:static;border-right:0;border-bottom:3px solid var(--green)}
+  nav{flex-direction:row;overflow-x:auto}
+  .nav{white-space:nowrap;width:auto}
+  .me{display:none}
+  .sec-h .d{display:none}
+  #content{padding:22px 16px 50px}
+  .row{grid-template-columns:1fr auto;gap:8px}
+  .row .st,.row .due{display:none}
+  .grid,.must .two,.seg,.prob,.meta,.kpis{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div id="login" class="hide"></div>
+
+<div id="shell" class="hide">
+  <aside>
+    <div class="brand">ava<b>.help</b><small id="firmName">Aggaarwal Vikram &amp; Associates</small></div>
+    <nav id="nav"></nav>
+    <div class="me" id="meBox"></div>
+  </aside>
+  <main>
+    <div class="top">
+      <span id="offChip" class="chip off hide"></span>
+      <button id="refChip" class="chip" data-act="refresh"></button>
+      <div class="bell" title="Waiting on you"><svg class="i"><use href="#i-bell"/></svg><span class="dot hide" id="bellDot"></span></div>
+    </div>
+    <div id="content"></div>
+  </main>
+</div>
+
+<div id="ov" data-act="closeDrawer"></div>
+<div id="drawer"></div>
+<div id="toast"></div>
+
+<!-- icon sprite -->
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="i-inbox" viewBox="0 0 24 24"><path d="M3 13h5l1.5 3h5L16 13h5"/><path d="M5 5h14l2 8v6H3v-6z"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></symbol>
+  <symbol id="i-ext" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></symbol>
+  <symbol id="i-right" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14M12 17h.01"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-ticket" viewBox="0 0 24 24"><path d="M3 7h18v3a2 2 0 0 0 0 4v3H3v-3a2 2 0 0 0 0-4z"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8"/><path d="M10 20a2 2 0 0 0 4 0"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-out" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></symbol>
+  <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="m10.8 12.2 9.2-9.2M17 6l3 3"/></symbol>
+  <symbol id="i-bulb" viewBox="0 0 24 24"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/></symbol>
+  <symbol id="i-wifi" viewBox="0 0 24 24"><path d="M2 8.8a15 15 0 0 1 20 0M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0M12 20h.01"/></symbol>
+</svg>
+
+<script>
+/* ======================================================================
+ *  AVA HELP DESK — front end
+ * ==================================================================== */
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ic = n => `<svg class="i"><use href="#i-${n}"/></svg>`;
+const initials = n => String(n || '?').split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase();
+
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('avahd_' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem('avahd_' + k, JSON.stringify(v)); } catch (e) {} },
+  del(k) { try { localStorage.removeItem('avahd_' + k); } catch (e) {} }
+};
+const apiUrl = () => (API_URL && API_URL.trim()) || store.get('api', '');
+
+const S = {
+  token: store.get('token', ''),
+  boot: store.get('boot', null),
+  view: store.get('view', 'toMe'),
+  toMe: store.get('c_toMe', null),
+  byMe: store.get('c_byMe', null),
+  byMeTab: 'Active',
+  insights: null,
+  detail: null,
+  queue: store.get('queue', []),
+  draft: store.get('draft', {}),
+  online: true,
+  busy: false,
+  faqQuery: '',
+  matches: null,
+  collapsed: store.get('collapsed', {})
+};
+
+/* ---------------------------- API ---------------------------- */
+async function api(action, payload = {}) {
+  const url = apiUrl();
+  if (!url) throw new Error('Web-app URL not set.');
+  let res;
+  try {
+    res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(Object.assign({ action, token: S.token }, payload)),
+      redirect: 'follow'
+    });
+  } catch (e) {
+    setOnline(false);
+    const err = new Error('No internet connection.'); err.offline = true; throw err;
+  }
+  let j;
+  try { j = await res.json(); } catch (e) {
+    setOnline(false);
+    const err = new Error('Server did not respond properly. Check the Web-app URL / deployment.'); err.offline = true; throw err;
+  }
+  setOnline(true);
+  if (!j.ok) {
+    const err = new Error(j.error || 'Error'); err.auth = j.auth;
+    if (j.auth) { logout(true); }
+    throw err;
+  }
+  return j.data;
+}
+
+function setOnline(v) {
+  S.online = v;
+  const c = $('#offChip');
+  if (!c) return;
+  const q = S.queue.length;
+  if (!v || q) {
+    c.classList.remove('hide');
+    c.innerHTML = ic('wifi') + (v ? '' : 'Offline') + (q ? `${v ? '' : ' · '}${q} slip${q > 1 ? 's' : ''} waiting to send` : '');
+  } else c.classList.add('hide');
+}
+
+let toastT;
+function toast(msg, bad) {
+  const t = $('#toast');
+  t.textContent = msg; t.className = 'on' + (bad ? ' bad' : '');
+  clearTimeout(toastT); toastT = setTimeout(() => t.className = '', 3200);
+}
+
+/* ---------------------------- FAQ matching ---------------------------- */
+const STOP = new Set('a an the is are was were be been am i me my we our you your he she it its they them their this that these those of in on at to for from by with as and or but if then so not no do does did done can could should would will shall may might must have has had how what when where which who whom why please kindly sir madam want need know tell help about into than also any all some there here get got make made use using used one two just very more most much'.split(' '));
+const SYN = { tb: 'trial balance', brs: 'bank reconciliation', '2b': 'gstr2b', gstr: 'gstr', ewb: 'eway', 'e-way': 'eway', itc: 'input credit', mca: 'mca roc', roc: 'roc mca', wp: 'working paper', wps: 'working paper' };
+function stem(w) {
+  if (w.length > 5 && w.endsWith('ing')) return w.slice(0, -3);
+  if (w.length > 4 && w.endsWith('ed')) return w.slice(0, -2);
+  if (w.length > 4 && w.endsWith('es')) return w.slice(0, -2);
+  if (w.length > 3 && w.endsWith('s') && !w.endsWith('ss')) return w.slice(0, -1);
+  return w;
+}
+function toks(s) {
+  let t = String(s || '').toLowerCase().replace(/gstr[\s-]*(\d[a-z]?)/g, 'gstr$1').replace(/[^a-z0-9\s-]/g, ' ').split(/[\s]+/);
+  const out = [];
+  t.forEach(w => {
+    w = w.replace(/^-+|-+$/g, '');
+    if (!w || STOP.has(w)) return;
+    if (SYN[w]) SYN[w].split(' ').forEach(x => out.push(stem(x)));
+    if (w.length < 2) return;
+    out.push(stem(w));
+  });
+  return out;
+}
+function buildIndex(faq) {
+  const docs = faq.map(f => {
+    const tf = {};
+    toks(f.question).forEach(w => tf[w] = (tf[w] || 0) + 1);
+    toks(f.keywords).forEach(w => tf[w] = (tf[w] || 0) + 1.5);
+    toks(f.category).forEach(w => tf[w] = (tf[w] || 0) + 0.3);
+    return { f, tf };
+  });
+  const df = {};
+  docs.forEach(d => Object.keys(d.tf).forEach(w => df[w] = (df[w] || 0) + 1));
+  const N = docs.length || 1;
+  const idf = w => Math.log(1 + N / (df[w] || 0.5));
+  docs.forEach(d => {
+    d.v = {}; let n = 0;
+    Object.keys(d.tf).forEach(w => { d.v[w] = d.tf[w] * idf(w); n += d.v[w] * d.v[w]; });
+    d.n = Math.sqrt(n) || 1;
+  });
+  return { docs, idf };
+}
+let IDX = null;
+function faqMatches(text, limit = 3) {
+  const faq = (S.boot && S.boot.faq) || [];
+  if (!faq.length) return [];
+  if (!IDX || IDX.size !== faq.length) { IDX = buildIndex(faq); IDX.size = faq.length; }
+  const qtf = {};
+  toks(text).forEach(w => qtf[w] = (qtf[w] || 0) + 1);
+  const qv = {}; let qn = 0;
+  Object.keys(qtf).forEach(w => { qv[w] = qtf[w] * IDX.idf(w); qn += qv[w] * qv[w]; });
+  qn = Math.sqrt(qn) || 1;
+  return IDX.docs.map(d => {
+    let dot = 0;
+    Object.keys(qv).forEach(w => { if (d.v[w]) dot += qv[w] * d.v[w]; });
+    return { f: d.f, score: dot / (qn * d.n) };
+  }).filter(x => x.score >= 0.2).sort((a, b) => b.score - a.score)
+    .filter((x, i, arr) => x.score >= arr[0].score * 0.5).slice(0, limit);
+}
+
+/* ---------------------------- LOGIN ---------------------------- */
+function showLogin(msg) {
+  $('#shell').classList.add('hide');
+  const L = $('#login'); L.classList.remove('hide');
+  const needUrl = !apiUrl();
+  L.innerHTML = `<form class="lg" id="lgForm" autocomplete="on">
+    <div class="brand">ava<b>.help</b></div>
+    <p>Office help desk: ask, review, learn.</p>
+    ${msg ? `<div class="err">${esc(msg)}</div>` : ''}
+    ${needUrl ? `<div class="f"><label>Web-app URL (one-time setup)</label><input id="lgUrl" placeholder="https://script.google.com/macros/s/.../exec" required></div>` : ''}
+    <div class="f"><label>Office e-mail</label><input id="lgEmail" type="email" required value="${esc(store.get('lastEmail', ''))}"></div>
+    <div class="f"><label>PIN</label><input id="lgPin" type="password" inputmode="numeric" maxlength="6" required></div>
+    <button class="btn pri" id="lgBtn" type="submit">Log in</button>
+    <div class="small">${needUrl ? '' : `Server set. <a id="lgReset">Change Web-app URL</a>`}</div>
+  </form>`;
+  $('#lgForm').onsubmit = async e => {
+    e.preventDefault();
+    if (needUrl) store.set('api', $('#lgUrl').value.trim());
+    const b = $('#lgBtn'); b.disabled = true; b.textContent = 'Logging in…';
+    try {
+      const d = await api('login', { email: $('#lgEmail').value, pin: $('#lgPin').value });
+      S.token = d.token; S.boot = d.boot;
+      store.set('token', S.token); store.set('boot', S.boot); store.set('lastEmail', $('#lgEmail').value.trim());
+      S.view = S.boot.me.canAnswer ? 'toMe' : 'byMe';
+      startApp();
+    } catch (err) { showLogin(err.message); }
+  };
+  const r = $('#lgReset'); if (r) r.onclick = () => { store.del('api'); showLogin(); };
+}
+
+function logout(expired) {
+  S.token = ''; store.del('token'); store.del('c_toMe'); store.del('c_byMe');
+  S.toMe = S.byMe = null;
+  closeDrawer();
+  showLogin(expired ? 'Please log in again.' : '');
+}
+
+/* ---------------------------- SHELL ---------------------------- */
+function startApp() {
+  $('#login').classList.add('hide');
+  $('#shell').classList.remove('hide');
+  $('#firmName').textContent = S.boot.firm || '';
+  const me = S.boot.me;
+  $('#meBox').innerHTML = `<b>${esc(me.name)}</b>${esc(String(me.role || '').toUpperCase())} · ${esc(me.dept || '')}<br>${esc(me.email)}
+    <div class="btns"><button data-act="pin">${ic('key')}PIN</button><button data-act="logout">${ic('out')}Log out</button></div>`;
+  if (!me.canAnswer && (S.view === 'toMe' || S.view === 'insights')) S.view = 'byMe';
+  renderNav(); render();
+  refresh(false);
+  flushQueue();
+}
+
+function renderNav() {
+  const me = S.boot.me;
+  const openToMe = S.toMe ? S.toMe.open.filter(s => !s.batched).length : 0;
+  const answeredByMe = S.byMe ? S.byMe.slips.filter(s => s.Status === 'Answered').length : 0;
+  const items = [];
+  if (me.canAnswer) items.push(['toMe', 'inbox', 'Raised to Me', openToMe]);
+  items.push(['byMe', 'send', 'Raised by Me', answeredByMe]);
+  items.push(['raise', 'plus', 'Raise a Slip', 0, 'raise']);
+  items.push(['faq', 'book', 'FAQ Bank', 0]);
+  if (me.canAnswer) items.push(['insights', 'chart', 'Insights', 0]);
+  $('#nav').innerHTML = items.map(([v, i, t, c, cls]) =>
+    `<button class="nav ${cls || ''} ${S.view === v ? 'on' : ''}" data-act="go" data-v="${v}">${ic(i)}${t}${c ? `<span class="cnt">${c}</span>` : ''}</button>`).join('');
+  const bell = openToMe + answeredByMe;
+  const d = $('#bellDot'); d.textContent = bell; d.classList.toggle('hide', !bell);
+  document.title = (bell ? `(${bell}) ` : '') + 'AVA Help Desk';
+}
+
+function setRefreshing(on) {
+  const c = $('#refChip');
+  c.classList.toggle('spin', on);
+  c.innerHTML = ic('refresh') + (on ? 'Refreshing…' : 'Refresh');
+}
+
+async function refresh(quiet) {
+  if (!S.token || S.busy) return;
+  S.busy = true; setRefreshing(true);
+  try {
+    const jobs = [api('byMe').then(d => { S.byMe = d; store.set('c_byMe', d); })];
+    if (S.boot.me.canAnswer) jobs.push(api('toMe').then(d => { S.toMe = d; store.set('c_toMe', d); }));
+    if (S.view === 'insights') jobs.push(api('insights').then(d => S.insights = d));
+    if (S.view === 'faq' || !quiet) jobs.push(api('bootstrap').then(d => { S.boot = d; store.set('boot', d); IDX = null; }));
+    await Promise.all(jobs);
+    if (S.view !== 'raise') render();
+    renderNav();
+  } catch (e) {
+    if (!e.offline && !e.auth && !quiet) toast(e.message, true);
+  } finally { S.busy = false; setRefreshing(false); setOnline(S.online); }
+}
+
+/* ---------------------------- RENDER ---------------------------- */
+function render() {
+  const c = $('#content');
+  if (S.view === 'toMe') c.innerHTML = viewToMe();
+  else if (S.view === 'byMe') c.innerHTML = viewByMe();
+  else if (S.view === 'raise') { c.innerHTML = viewRaise(); bindRaise(); }
+  else if (S.view === 'faq') { c.innerHTML = viewFaq(); bindFaq(); }
+  else if (S.view === 'insights') c.innerHTML = viewInsights();
+}
+
+function statusPill(s) {
+  if (s._queued) return `<span class="pill p-queued">Queued</span>`;
+  if (s.batched || (s.MondayFile && s.Status === 'Open')) return `<span class="pill p-monday">Monday file</span>`;
+  const m = { Open: 'p-open', Answered: 'p-answered', Closed: 'p-closed', 'Auto-closed': 'p-auto' };
+  const label = s.Status === 'Auto-closed' ? 'Solved by FAQ' : s.Status;
+  return `<span class="pill ${m[s.Status] || 'p-closed'}">${esc(label)}</span>`;
+}
+function fmtDate(ymd) {
+  if (!ymd) return '–';
+  const d = new Date(ymd + 'T00:00:00');
+  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+}
+function ago(iso) {
+  if (!iso) return '';
+  const m = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+  if (m < 1) return 'just now';
+  if (m < 60) return m + 'm ago';
+  if (m < 1440) return Math.round(m / 60) + 'h ago';
+  return Math.round(m / 1440) + 'd ago';
+}
+
+function slipRow(s, mode) {
+  const dueTxt = s.late ? `${s.daysLate}d late` : (s.Status === 'Open' ? fmtDate(s.DueDate) : fmtDate(String(s.UpdatedAt).slice(0, 10)));
+  const lastLine = s.last && s.last.kind !== 'System'
+    ? `<div class="m"><b>${esc(String(s.last.by || '').split(' ')[0])}:</b> ${esc(s.last.text)} · ${ago(s.last.at)}</div>`
+    : `<div class="m">${esc(s.SlipID)} · ${esc(s.Category)}${s.Client ? ' · ' + esc(s.Client) : ''}</div>`;
+  const toMe = mode === 'toMe';
+  return `<div class="row ${s.late ? 'late' : ''}">
+    <div class="st">${statusPill(s)}</div>
+    <div class="ttl"><div class="t">${esc(s.Title)} <span class="q">— ${esc(s.Question)}</span></div>${lastLine}</div>
+    <span class="pri pri-${esc(s.Priority)}">${esc(s.Priority)}</span>
+    <div class="due mono ${s.late ? 'late' : ''}">${dueTxt}</div>
+    <div class="acts">
+      ${toMe ? `<button class="ib ok" title="Answer &amp; close" data-act="open" data-id="${esc(s.SlipID)}" data-focus="1">${ic('check')}</button>
+      <button class="ib ${s.batched ? 'on' : ''}" title="${s.batched ? 'Take out of Monday file' : 'Move to Monday file'}" data-act="monday" data-id="${esc(s.SlipID)}">${ic('cal')}</button>` : ''}
+      <button class="ib" title="Open linked file" ${s.FileLink ? `data-act="link" data-href="${esc(s.FileLink)}"` : 'disabled'}>${ic('ext')}</button>
+      <button class="ib" title="Open slip" ${s._queued ? 'disabled' : `data-act="open" data-id="${esc(s.SlipID)}"`}>${ic('right')}</button>
+    </div>
+  </div>`;
+}
+
+function groupByPerson(list, key, users) {
+  const g = {};
+  list.forEach(s => { const k = String(s[key]).toLowerCase(); (g[k] = g[k] || []).push(s); });
+  return Object.keys(g).map(k => {
+    const u = (users || {})[k] || {};
+    const name = key === 'RaisedBy' ? g[k][0].RaisedByName : g[k][0].AssignedName;
+    return `<div class="grp"><div class="grp-h"><div class="av">${initials(name)}</div><span class="nm">${esc(name)}</span>
+      <span class="rl">${esc(u.role || '')}${u.dept ? ' · ' + esc(u.dept) : ''}</span><span class="c">${g[k].length}</span></div>
+      ${g[k].map(s => slipRow(s, key === 'RaisedBy' ? 'toMe' : 'byMe')).join('')}</div>`;
+  }).join('');
+}
+
+function section(id, icon, title, desc, count, body) {
+  const closed = S.collapsed[id];
+  return `<div class="sec ${closed ? 'closed' : ''}"><div class="sec-h" data-act="collapse" data-id="${id}">
+    <span class="chev">${ic('down')}</span>${ic(icon)}<h2>${title}</h2><span class="n ${count ? '' : 'zero'}">${count}</span><span class="d">${desc}</span></div>
+    <div class="sec-b">${body}</div></div>`;
+}
+
+function viewToMe() {
+  if (!S.toMe) return `<h1>Raised to Me</h1><p class="sub">Loading…</p>`;
+  const users = S.toMe.users || {};
+  const open = S.toMe.open.slice().sort((a, b) =>
+    (b.late - a.late) || ({ HIGH: 0, MEDIUM: 1, LOW: 2 }[a.Priority] - { HIGH: 0, MEDIUM: 1, LOW: 2 }[b.Priority]) || String(a.DueDate).localeCompare(String(b.DueDate)));
+  const now = open.filter(s => !s.batched);
+  const monday = open.filter(s => s.batched);
+  const by = t => now.filter(s => s.Type === t);
+  const body = (arr, empty) => arr.length ? groupByPerson(arr, 'RaisedBy', users) : `<div class="empty">${empty}</div>`;
+  const mondayDate = monday.length ? new Date(monday[0].MondayFile + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' }) : '';
+  const mondayBlock = monday.length ? `<div class="batch"><span class="tag">MONDAY FILE</span><span class="t">Batched for ${mondayDate}, grouped by person.</span><span class="c">${monday.length}</span></div>${groupByPerson(monday, 'RaisedBy', users)}` : '';
+  const help = by('Help'), rev = by('Review'), tk = by('Ticket');
+  return `<h1>Raised to Me</h1><p class="sub">Everything waiting on you: help, reviews and tickets.</p>
+    ${section('help', 'help', 'Help Slips', 'Colleagues stuck on something, grouped by person.', help.length, body(help, 'Nobody is stuck right now.'))}
+    ${section('review', 'eye', 'Review Slips', 'Work waiting on your read, grouped by person.', rev.length, (rev.length ? groupByPerson(rev, 'RaisedBy', users) : (monday.length ? '' : `<div class="empty">Nothing to review.</div>`)) + mondayBlock)}
+    ${section('ticket', 'ticket', 'Tickets', 'Problems handed to you to fix or chase.', tk.length, body(tk, 'Nothing addressed to you.'))}
+    ${S.toMe.answered.length ? section('answered', 'send', 'Answered, waiting on staff', 'You replied; the staff member has not closed it yet.', S.toMe.answered.length, groupByPerson(S.toMe.answered, 'RaisedBy', users)) : ''}`;
+}
+
+function viewByMe() {
+  const queued = S.queue.map(q => Object.assign({ _queued: true, SlipID: q.slip.clientRef, Title: q.slip.title, Question: q.slip.question,
+    Priority: q.slip.priority, Category: q.slip.category, Client: q.slip.client, Status: 'Open', AssignedTo: q.slip.assignTo,
+    AssignedName: (S.boot.answerers.find(a => a.email === q.slip.assignTo) || {}).name || q.slip.assignTo, FileLink: q.slip.fileLink }));
+  const all = queued.concat(S.byMe ? S.byMe.slips : []);
+  const tabs = { Active: s => s.Status === 'Open' || s.Status === 'Answered', Answered: s => s.Status === 'Answered',
+    Closed: s => s.Status === 'Closed' || s.Status === 'Auto-closed', All: () => true };
+  const list = all.filter(tabs[S.byMeTab]);
+  const answered = all.filter(tabs.Answered).length;
+  return `<h1>Raised by Me</h1><p class="sub">Your slips and the replies you have received.</p>
+    <div class="tabs">${Object.keys(tabs).map(t => `<button class="${S.byMeTab === t ? 'on' : ''}" data-act="tab" data-t="${t}">${t}${t === 'Answered' && answered ? ` (${answered})` : ''}</button>`).join('')}</div>
+    ${!S.byMe && !queued.length ? '<p class="sub">Loading…</p>' :
+      list.length ? `<div class="sec"><div class="sec-b">${groupByPerson(list, 'AssignedTo', S.toMe ? S.toMe.users : {})}</div></div>`
+      : `<div class="empty">No slips here. Use <b>Raise a Slip</b> when you are stuck.</div>`}`;
+}
+
+/* ---------------------------- RAISE A SLIP ---------------------------- */
+const TYPE_INFO = {
+  Help: { d: 'I am stuck and need guidance.', p: 'Probable answer', ph: 'What do you think the answer is? Explain briefly.' },
+  Review: { d: 'My work is ready for review.', p: 'Probable conclusion', ph: 'What do you think the correct treatment or conclusion is?' },
+  Ticket: { d: 'Something is broken or needs chasing.', p: 'Probable cause / fix', ph: 'What do you think is causing it and how could it be fixed?' }
+};
+
+function viewRaise() {
+  const d = S.draft, b = S.boot;
+  const type = d.type || 'Help';
+  const ti = TYPE_INFO[type];
+  const ans = b.answerers.filter(a => a.email !== b.me.email);
+  const assign = d.assignTo || (ans.find(a => a.email === b.defaultAssignee) || ans[0] || {}).email || '';
+  const pastClients = [...new Set((S.byMe ? S.byMe.slips : []).map(s => s.Client).filter(Boolean))];
+  const min = b.minProbable || 15;
+  if (S.matches) return viewMatches();
+  return `<h1>Raise a Slip</h1><p class="sub">Ask for help, send work for review or report a problem.</p>
+  <div id="rErr"></div>
+  <div class="card">
+    <h3>1. What kind of slip?</h3><p class="hint">Pick one.</p>
+    <div class="seg">${Object.keys(TYPE_INFO).map(t => `<button type="button" class="${t === type ? 'on' : ''}" data-act="rtype" data-t="${t}"><b>${t}</b><span>${TYPE_INFO[t].d}</span></button>`).join('')}</div>
+  </div>
+  <div class="card">
+    <h3>2. Details</h3><p class="hint">Be specific: the client, the period, the figure, and where you are stuck.</p>
+    <div class="grid">
+      <div class="f"><label>Send to</label><select id="r_assignTo">${ans.map(a => `<option value="${esc(a.email)}" ${a.email === assign ? 'selected' : ''}>${esc(a.name)} (${esc(a.role)})</option>`).join('')}</select></div>
+      <div class="f"><label>Category</label><select id="r_category">${b.categories.map(c => `<option ${c === d.category ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select></div>
+      <div class="f"><label>Priority</label><select id="r_priority">${['HIGH', 'MEDIUM', 'LOW'].map(p => `<option ${p === (d.priority || 'MEDIUM') ? 'selected' : ''}>${p}</option>`).join('')}</select></div>
+    </div>
+    <div class="grid" style="grid-template-columns:1fr 2fr">
+      <div class="f"><label>Client (optional)</label><input id="r_client" list="clientList" value="${esc(d.client || '')}"><datalist id="clientList">${pastClients.map(c => `<option value="${esc(c)}">`).join('')}</datalist></div>
+      <div class="f"><label>Title</label><input id="r_title" maxlength="140" placeholder="e.g. TDS on rent: 194I or 194IB?" value="${esc(d.title || '')}"></div>
+    </div>
+    <div class="f"><label>Your question / what you need</label><textarea id="r_question" rows="4" placeholder="Explain the facts and where exactly you are stuck.">${esc(d.question || '')}</textarea></div>
+    <div id="faqLive"></div>
+    <div class="f"><label>File / folder link (optional)</label><input id="r_fileLink" placeholder="Drive / OneDrive / shared-folder link" value="${esc(d.fileLink || '')}"></div>
+  </div>
+  <div class="must">
+    <h3>${ic('bulb')} 3. Your two ${ti.p.toLowerCase()}s <span class="tag">MANDATORY</span></h3>
+    <p class="hint">Before asking, write <b>two possible answers</b> as you understand them. Right or wrong does not matter; we want to see your thinking.
+    "Don't know", "NA" and copies of the same answer are not accepted. Minimum ${min} characters each.</p>
+    <div class="two">
+      <div class="f"><label>${ti.p} 1</label><textarea id="r_probable1" rows="4" placeholder="${esc(ti.ph)}">${esc(d.probable1 || '')}</textarea><div class="ct" id="ct1"></div></div>
+      <div class="f"><label>${ti.p} 2</label><textarea id="r_probable2" rows="4" placeholder="A different possibility.">${esc(d.probable2 || '')}</textarea><div class="ct" id="ct2"></div></div>
+    </div>
+  </div>
+  <div class="bar"><button class="btn" data-act="rclear">Clear</button><button class="btn pri" data-act="rsubmit">${ic('send')}Check FAQ &amp; submit</button></div>`;
+}
+
+const RF = ['assignTo', 'category', 'priority', 'client', 'title', 'question', 'fileLink', 'probable1', 'probable2'];
+function readDraft() {
+  RF.forEach(k => { const el = $('#r_' + k); if (el) S.draft[k] = el.value; });
+  store.set('draft', S.draft);
+}
+function bindRaise() {
+  if (S.matches) return;
+  const min = S.boot.minProbable || 15;
+  const upd = () => {
+    readDraft();
+    [1, 2].forEach(i => {
+      const v = (S.draft['probable' + i] || '').trim().length;
+      const el = $('#ct' + i);
+      el.textContent = `${v} / ${min}+ characters`; el.classList.toggle('bad', v > 0 && v < min);
+    });
+    const m = faqMatches((S.draft.title || '') + ' ' + (S.draft.question || ''));
+    const live = $('#faqLive');
+    const bothDone = ['probable1', 'probable2'].every(k => (S.draft[k] || '').trim().length >= min);
+    live.innerHTML = m.length && (S.draft.question || '').length > 8
+      ? `<div class="faqhint">${ic('book')}${m.length} similar question${m.length > 1 ? 's' : ''} found in the FAQ bank. ${bothDone ? 'Click <b>Check FAQ &amp; submit</b> to see the answers.' : 'Write your two probable answers below to see them.'}</div>` : '';
+  };
+  $('#content').querySelectorAll('input,select,textarea').forEach(el => el.addEventListener('input', upd));
+  upd();
+}
+
+function localValidate(d) {
+  const min = S.boot.minProbable || 15;
+  const junk = ['na', 'n/a', 'nil', 'none', 'no idea', 'dont know', "don't know", 'do not know', 'not sure', 'no', 'yes', 'ok', 'test', 'xyz', 'abc', '-', '--', '?', '...'];
+  const norm = s => String(s).toLowerCase().replace(/[^a-z0-9/'?\-. ]/g, '').replace(/\s+/g, ' ').trim();
+  if (!d.assignTo) return 'Choose who the slip is for.';
+  if ((d.title || '').trim().length < 5) return 'Give the slip a short title (at least 5 characters).';
+  if ((d.question || '').trim().length < 10) return 'Describe your question (at least 10 characters).';
+  const lab = TYPE_INFO[d.type || 'Help'].p;
+  for (const i of [1, 2]) {
+    const v = (d['probable' + i] || '').trim();
+    if (!v) return `${lab} ${i} is mandatory. Write what you think the answer is. Right or wrong does not matter.`;
+    if (junk.includes(norm(v))) return `${lab} ${i}: "${v}" is not accepted. Write your own best guess.`;
+    if (v.length < min) return `${lab} ${i} must be at least ${min} characters. Explain your thinking.`;
+  }
+  if (norm(d.probable1) === norm(d.probable2)) return `Your two ${lab.toLowerCase()}s must be different.`;
+  return '';
+}
+
+function slipPayload() {
+  const d = S.draft;
+  return { type: d.type || 'Help', assignTo: d.assignTo, category: d.category, priority: d.priority || 'MEDIUM',
+    client: d.client, title: d.title, question: d.question, fileLink: d.fileLink,
+    probable1: d.probable1, probable2: d.probable2, clientRef: d.clientRef || (d.clientRef = 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7)) };
+}
+
+function raiseError(msg) {
+  $('#rErr').innerHTML = msg ? `<div class="err">${esc(msg)}</div>` : '';
+  if (msg) window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+async function submitRaise(skipFaq) {
+  readDraft();
+  if ($('#rErr')) raiseError('');
+  if (!S.draft.type) S.draft.type = 'Help';
+  const err = localValidate(S.draft);
+  if (err) { if (S.matches) { S.matches = null; render(); } raiseError(err); return; }
+  if (!skipFaq) {
+    const m = faqMatches((S.draft.title || '') + ' ' + (S.draft.question || ''));
+    if (m.length) { S.matches = m; render(); window.scrollTo(0, 0); return; }
+  }
+  await sendSlip();
+}
+
+async function sendSlip() {
+  const slip = slipPayload();
+  store.set('draft', S.draft);
+  try {
+    const r = await api('createSlip', { slip });
+    toast(`Slip ${r.slip.SlipID} sent to ${r.slip.AssignedName}.`);
+    resetDraft(); S.view = 'byMe'; S.byMeTab = 'Active'; store.set('view', 'byMe');
+    renderNav(); render(); refresh(true);
+  } catch (e) {
+    if (e.offline) {
+      S.queue.push({ action: 'createSlip', slip }); store.set('queue', S.queue);
+      toast('No internet. Slip saved on this PC and will be sent automatically.');
+      resetDraft(); S.view = 'byMe'; renderNav(); render(); setOnline(false);
+    } else { S.matches = null; render(); raiseError(e.message); }
+  }
+}
+
+function resetDraft() { S.draft = { type: S.draft.type || 'Help' }; S.matches = null; store.set('draft', S.draft); }
+
+function viewMatches() {
+  const m = S.matches;
+  const who = (S.boot.answerers.find(a => a.email === S.draft.assignTo) || {}).name || 'reviewer';
+  return `<h1>Is this your answer?</h1><p class="sub">We found ${m.length} similar question${m.length > 1 ? 's' : ''} already answered in the FAQ bank. Compare them with your two probable answers.</p>
+  <div id="rErr"></div>
+  <div class="prob" style="margin-bottom:22px">
+    <div class="p"><b>Your ${TYPE_INFO[S.draft.type || 'Help'].p.toLowerCase()} 1</b>${esc(S.draft.probable1)}</div>
+    <div class="p"><b>Your ${TYPE_INFO[S.draft.type || 'Help'].p.toLowerCase()} 2</b>${esc(S.draft.probable2)}</div>
+  </div>
+  ${m.map((x, i) => `<div class="match ${x.score >= 0.45 ? 'strong' : ''}"><span class="sc">${x.score >= 0.45 ? 'Very close match' : 'Possible match'} · ${Math.round(x.score * 100)}%</span>
+    <h4>${esc(x.f.question)}</h4><div class="a">${esc(x.f.answer)}</div>
+    <div class="bar" style="justify-content:flex-start"><button class="btn pri sm" data-act="faqok" data-id="${esc(x.f.id)}">${ic('check')}Yes, this solves it</button>
+    <span class="cat">${esc(x.f.category)}</span><span style="color:var(--ink-3);font-size:12px">Used ${x.f.used} time${x.f.used === 1 ? '' : 's'}</span></div></div>`).join('')}
+  <div class="bar" style="margin-top:18px"><button class="btn" data-act="faqback">Back to edit</button><button class="btn dark" data-act="faqno">${ic('send')}Not solved, send to ${esc(who)}</button></div>`;
+}
+
+async function faqResolve(id) {
+  const slip = slipPayload();
+  try {
+    await api('faqResolve', { slip, faqId: id });
+    toast('Solved from the FAQ bank. Your probable answers are recorded.');
+    resetDraft(); S.view = 'byMe'; S.byMeTab = 'Closed'; renderNav(); render(); refresh(true);
+  } catch (e) {
+    if (e.offline) toast('No internet. Your slip is saved; try again when online.', true);
+    else toast(e.message, true);
+  }
+}
+
+async function flushQueue() {
+  if (!S.queue.length || !S.token) { setOnline(S.online); return; }
+  const left = [];
+  let sent = 0;
+  for (const q of S.queue) {
+    try { await api(q.action, { slip: q.slip }); sent++; }
+    catch (e) {
+      if (e.offline || e.auth) left.push(q);
+      else toast('A queued slip was rejected: ' + e.message, true);
+    }
+  }
+  S.queue = left; store.set('queue', left);
+  if (sent) { toast(`${sent} queued slip${sent > 1 ? 's' : ''} sent.`); refresh(true); }
+  setOnline(S.online);
+}
+
+/* ---------------------------- DETAIL DRAWER ---------------------------- */
+async function openSlip(id, focus) {
+  $('#ov').classList.add('on'); $('#drawer').classList.add('on');
+  $('#drawer').innerHTML = `<div class="db"><p class="sub">Loading ${esc(id)}…</p></div>`;
+  try {
+    S.detail = await api('getSlip', { id });
+    S.detail.verdict = S.detail.slip.Verdict || '';
+    renderDrawer(focus);
+  } catch (e) { $('#drawer').innerHTML = `<div class="db"><div class="err">${esc(e.message)}</div><button class="btn" data-act="closeDrawer">Close</button></div>`; }
+}
+function closeDrawer() { $('#ov').classList.remove('on'); $('#drawer').classList.remove('on'); S.detail = null; }
+
+function renderDrawer(focus) {
+  const { slip: s, replies, faq } = S.detail;
+  const me = S.boot.me;
+  const isRaiser = s.RaisedBy === me.email;
+  const isAns = !isRaiser && (s.AssignedTo === me.email || (me.canAnswer && me.role === 'Partner'));
+  const lab = TYPE_INFO[s.Type] ? TYPE_INFO[s.Type].p : 'Probable answer';
+  const v = S.detail.verdict;
+  const cls = i => !v ? '' : (v === 'Both' || v === 'Option ' + i) ? 'right' : 'wrong';
+  const closed = s.Status === 'Closed' || s.Status === 'Auto-closed';
+  const others = S.boot.answerers.filter(a => a.email !== s.RaisedBy && a.email !== s.AssignedTo);
+  $('#drawer').innerHTML = `
+  <div class="dh"><div style="min-width:0"><div class="id">${esc(s.SlipID)} · ${esc(s.Type)} slip</div><h2>${esc(s.Title)}</h2>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${statusPill(s)}<span class="pri pri-${esc(s.Priority)}">${esc(s.Priority)}</span>${s.late ? `<span class="due late mono">${s.daysLate}d late</span>` : ''}</div></div>
+    <button class="ib x" data-act="closeDrawer">${ic('x')}</button></div>
+  <div class="db">
+    <div class="meta">
+      <div><span>Raised by</span>${esc(s.RaisedByName)}</div><div><span>Sent to</span>${esc(s.AssignedName)}</div><div><span>Category</span>${esc(s.Category)}</div>
+      <div><span>Client</span>${esc(s.Client || '–')}</div><div><span>Raised</span>${new Date(s.CreatedAt).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })}</div><div><span>Due</span>${fmtDate(s.DueDate)}${s.MondayFile ? ' (Monday file)' : ''}</div>
+    </div>
+    ${s.FileLink ? `<p style="margin:-6px 0 16px"><a href="${esc(s.FileLink)}" target="_blank" rel="noopener">${ic('ext')} Open linked file</a></p>` : ''}
+    <div class="lbl">Question</div><div class="qbox">${esc(s.Question)}</div>
+    <div class="lbl">${esc(raiserFirst(s))}'s two ${esc(lab.toLowerCase())}s</div>
+    <div class="prob"><div class="p ${cls(1)}"><b>Option 1</b>${esc(s.Probable1)}</div><div class="p ${cls(2)}"><b>Option 2</b>${esc(s.Probable2)}</div></div>
+    ${isAns ? `<div class="verd">Which was right? ${['Option 1', 'Option 2', 'Both', 'Neither'].map(x => `<button class="${v === x ? 'on' : ''}" data-act="verdict" data-v="${x}">${x}</button>`).join('')}</div>`
+      : (s.Verdict ? `<div class="verd">Reviewer's verdict: <b>${esc(s.Verdict)}</b></div>` : '<div style="height:12px"></div>')}
+    ${faq ? `<div class="faqhint">${ic('book')}Linked FAQ: ${esc(faq.question)}</div>` : ''}
+    <div class="lbl">Conversation</div>
+    <div class="thread">${replies.map(r => `<div class="msg ${esc(r.kind)}">${r.kind === 'System' ? `${esc(r.by)}: ${esc(r.text)} · ${ago(r.at)}` : `<div class="w">${esc(r.by)} · ${ago(r.at)}</div>${esc(r.text)}`}</div>`).join('')}</div>
+    ${isAns && !closed && others.length ? `<div class="bar" style="justify-content:flex-start;margin-bottom:6px"><span style="color:var(--ink-3);font-size:13px">Reassign to</span>
+      <select id="reTo" style="border:1px solid var(--line);border-radius:8px;padding:6px">${others.map(a => `<option value="${esc(a.email)}">${esc(a.name)}</option>`).join('')}</select>
+      <button class="btn sm" data-act="reassign">Reassign</button></div>` : ''}
+  </div>
+  ${composer(s, isAns, isRaiser, closed)}`;
+  if (focus) { const t = $('#rText'); if (t) t.focus(); }
+  const fx = $('#faqAdd');
+  if (fx) {
+    const sync = () => { $('#faqFields').classList.toggle('hide', !fx.checked); if (fx.checked && !$('#fa_a').dataset.touched) $('#fa_a').value = $('#rText').value; };
+    fx.onchange = sync; $('#rText').addEventListener('input', sync);
+    $('#fa_a').addEventListener('input', e => e.target.dataset.touched = '1');
+  }
+}
+function raiserFirst(s) { return String(s.RaisedByName || 'Staff').split(' ')[0]; }
+
+function composer(s, isAns, isRaiser, closed) {
+  if (closed) {
+    return (isRaiser || isAns) && s.Status === 'Closed'
+      ? `<div class="compose"><div class="bar"><button class="btn" data-act="reopen">Re-open slip</button></div></div>` : '';
+  }
+  if (isAns) {
+    const cats = S.boot.categories;
+    return `<div class="compose">
+      <textarea id="rText" placeholder="Your answer / guidance for ${esc(raiserFirst(s))}…"></textarea>
+      <label class="chk"><input type="checkbox" id="faqAdd"> Save this Q&amp;A to the FAQ bank (answers repeat questions automatically)</label>
+      <div class="faqbox hide" id="faqFields">
+        <div class="f"><label>FAQ question (general, without client names)</label><input id="fa_q" value="${esc(s.Title)}"></div>
+        <div class="f"><label>FAQ answer</label><textarea id="fa_a" rows="3"></textarea></div>
+        <div class="grid" style="grid-template-columns:2fr 1fr;gap:12px"><div class="f"><label>Keywords (comma separated)</label><input id="fa_k" placeholder="e.g. tds, rent, 194i"></div>
+        <div class="f"><label>Category</label><select id="fa_c">${cats.map(c => `<option ${c === s.Category ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select></div></div>
+      </div>
+      <div class="bar" style="margin-top:12px"><button class="btn" data-act="reply" data-close="0">${ic('send')}Send reply</button><button class="btn pri" data-act="reply" data-close="1">${ic('check')}Reply &amp; close</button></div>
+    </div>`;
+  }
+  if (isRaiser) {
+    return `<div class="compose">
+      <textarea id="rText" placeholder="${s.Status === 'Answered' ? 'Still unclear? Ask a follow-up…' : 'Add more information…'}"></textarea>
+      <div class="bar" style="margin-top:12px"><button class="btn" data-act="reply" data-close="0">${ic('send')}Send</button>
+      ${s.Status === 'Answered' ? `<button class="btn pri" data-act="reply" data-close="1">${ic('check')}Solved, close slip</button>` : `<button class="btn" data-act="withdraw">Withdraw / close</button>`}</div>
+    </div>`;
+  }
+  return '';
+}
+
+async function doReply(close) {
+  const s = S.detail.slip;
+  const text = ($('#rText') || {}).value || '';
+  const payload = { id: s.SlipID, text, close: !!close };
+  const me = S.boot.me;
+  const isAns = s.RaisedBy !== me.email;
+  if (isAns) {
+    if (S.detail.verdict) payload.verdict = S.detail.verdict;
+    if (close && !S.detail.verdict) { toast('Mark which probable answer was right (or Neither) before closing.', true); return; }
+    const fx = $('#faqAdd');
+    if (fx && fx.checked) payload.faq = { question: $('#fa_q').value, answer: $('#fa_a').value || text, keywords: $('#fa_k').value, category: $('#fa_c').value };
+  }
+  if (!text.trim() && !close) { toast('Write a reply first.', true); return; }
+  if (isAns && close && !text.trim()) { toast('Write your answer before closing.', true); return; }
+  document.querySelectorAll('.compose button').forEach(b => b.disabled = true);
+  try {
+    S.detail = await api('reply', payload);
+    S.detail.verdict = S.detail.slip.Verdict || '';
+    toast(close ? 'Slip closed.' : 'Reply sent.');
+    if (payload.faq) { refreshBoot(); }
+    close ? closeDrawer() : renderDrawer();
+    refresh(true);
+  } catch (e) { toast(e.message, true); document.querySelectorAll('.compose button').forEach(b => b.disabled = false); }
+}
+async function refreshBoot() { try { S.boot = await api('bootstrap'); store.set('boot', S.boot); IDX = null; } catch (e) {} }
+
+/* ---------------------------- FAQ BANK ---------------------------- */
+function viewFaq() {
+  const faq = (S.boot.faq || []).slice();
+  const q = S.faqQuery.trim();
+  let list;
+  if (q) list = faqMatches(q, 50).map(x => x.f).concat(faq.filter(f => (f.question + ' ' + f.answer + ' ' + f.keywords).toLowerCase().includes(q.toLowerCase())));
+  else list = faq.sort((a, b) => b.used - a.used || a.category.localeCompare(b.category));
+  const seen = new Set(); list = list.filter(f => !seen.has(f.id) && seen.add(f.id));
+  const can = S.boot.me.canAnswer;
+  return `<h1>FAQ Bank</h1><p class="sub">${faq.length} answered questions. New slips are checked against this list automatically.</p>
+    <div class="search"><input id="faqQ" placeholder="Search: e.g. download 2B, export trial balance, UDIN…" value="${esc(S.faqQuery)}">${can ? `<button class="btn pri" data-act="faqnew">${ic('plus')}Add FAQ</button>` : ''}</div>
+    <div id="faqEdit"></div>
+    <div class="card" style="padding:8px 20px">${list.length ? list.map(f => `<div class="faqi" data-fid="${esc(f.id)}">
+      <div class="q" data-act="faqtoggle">${esc(f.question)}<small><span class="cat">${esc(f.category)}</span> · used ${f.used}</small></div>
+      <div class="a">${esc(f.answer)}${f.keywords ? `<div style="margin-top:8px;font-size:12px;color:var(--ink-3)">Keywords: ${esc(f.keywords)}</div>` : ''}
+      ${can ? `<div class="bar" style="justify-content:flex-start;margin-top:10px"><button class="btn sm" data-act="faqedit" data-id="${esc(f.id)}">Edit</button><button class="btn sm" data-act="faqdel" data-id="${esc(f.id)}">Remove</button></div>` : ''}</div></div>`).join('')
+      : '<p class="sub" style="margin:14px 0">No match. Raise a slip and the answer can be added here.</p>'}</div>`;
+}
+function bindFaq() {
+  const i = $('#faqQ');
+  let t;
+  i.addEventListener('input', () => { clearTimeout(t); t = setTimeout(() => { S.faqQuery = i.value; const p = i.selectionStart; render(); const n = $('#faqQ'); n.focus(); n.setSelectionRange(p, p); }, 220); });
+}
+function faqEditor(f) {
+  f = f || {};
+  $('#faqEdit').innerHTML = `<div class="card"><h3>${f.id ? 'Edit FAQ' : 'New FAQ'}</h3><p class="hint">Write it in general terms so it helps the whole team.</p>
+    <div class="f"><label>Question</label><input id="fe_q" value="${esc(f.question || '')}"></div>
+    <div class="f"><label>Answer</label><textarea id="fe_a" rows="5">${esc(f.answer || '')}</textarea></div>
+    <div class="grid" style="grid-template-columns:2fr 1fr"><div class="f"><label>Keywords</label><input id="fe_k" value="${esc(f.keywords || '')}"></div>
+    <div class="f"><label>Category</label><select id="fe_c">${S.boot.categories.map(c => `<option ${c === f.category ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select></div></div>
+    <div class="bar"><button class="btn" data-act="faqcancel">Cancel</button><button class="btn pri" data-act="faqsave" data-id="${esc(f.id || '')}">Save</button></div></div>`;
+  $('#fe_q').focus();
+}
+
+/* ---------------------------- INSIGHTS ---------------------------- */
+function viewInsights() {
+  const d = S.insights;
+  if (!d) { refresh(true); return `<h1>Insights</h1><p class="sub">Loading…</p>`; }
+  const t = d.totals;
+  const pct = t.slips ? Math.round(100 * t.autoClosed / t.slips) : 0;
+  return `<h1>Insights</h1><p class="sub">Who asks what, how good their first thinking is, and how much the FAQ bank saves.</p>
+  <div class="kpis"><div class="kpi"><span>Total slips</span><b>${t.slips}</b></div><div class="kpi"><span>Open now</span><b>${t.open}</b></div>
+  <div class="kpi"><span>Solved by FAQ</span><b>${t.autoClosed}</b></div><div class="kpi"><span>FAQ self-service rate</span><b>${pct}%</b></div></div>
+  <div class="card"><h3>Staff: probable-answer accuracy</h3><p class="hint">Accuracy = slips where Option 1, Option 2 or Both was marked right ÷ slips you rated.</p>
+  ${d.staff.length ? `<table class="t"><tr><th>Staff</th><th>Dept</th><th class="n">Slips</th><th class="n">Help / Review / Ticket</th><th class="n">Solved by FAQ</th><th>Accuracy</th><th class="n">Rated</th><th class="n">Avg reply (hrs)</th></tr>
+  ${d.staff.map(r => `<tr><td><b>${esc(r.name)}</b></td><td>${esc(r.dept)}</td><td class="n">${r.total}</td><td class="n">${r.help} / ${r.review} / ${r.ticket}</td><td class="n">${r.faq}</td>
+    <td>${r.accuracy == null ? '<span style="color:var(--ink-3)">not rated</span>' : `<span class="bar-m"><i style="width:${r.accuracy}%"></i></span>${r.accuracy}%`}</td><td class="n">${r.rated}</td><td class="n">${r.avgRespHrs == null ? '–' : r.avgRespHrs}</td></tr>`).join('')}</table>` : '<div class="empty">No slips yet.</div>'}</div>
+  <div class="grid" style="grid-template-columns:1fr 1fr">
+    <div class="card"><h3>Open by reviewer</h3>${d.assignees.length ? `<table class="t"><tr><th>Reviewer</th><th class="n">Open</th><th class="n">Late</th></tr>${d.assignees.map(a => `<tr><td>${esc(a.name)}</td><td class="n">${a.open}</td><td class="n" style="color:${a.late ? 'var(--red)' : 'inherit'}">${a.late}</td></tr>`).join('')}</table>` : '<div class="empty">All clear.</div>'}</div>
+    <div class="card"><h3>Most used FAQs</h3><table class="t">${d.topFaq.map(f => `<tr><td>${esc(f.question)}</td><td class="n">${f.used}</td></tr>`).join('')}</table></div>
+  </div>`;
+}
+
+/* ---------------------------- CHANGE PIN ---------------------------- */
+function pinDialog() {
+  $('#ov').classList.add('on'); $('#drawer').classList.add('on');
+  $('#drawer').innerHTML = `<div class="dh"><div><div class="id">Account</div><h2>Change PIN</h2></div><button class="ib x" data-act="closeDrawer">${ic('x')}</button></div>
+    <div class="db" style="max-width:360px"><div class="f"><label>Current PIN</label><input id="p_old" type="password" inputmode="numeric" maxlength="6"></div>
+    <div class="f"><label>New PIN (4-6 digits)</label><input id="p_new" type="password" inputmode="numeric" maxlength="6"></div>
+    <button class="btn pri" data-act="pinsave">Save PIN</button></div>`;
+}
+
+/* ---------------------------- EVENTS ---------------------------- */
+document.addEventListener('click', async e => {
+  const el = e.target.closest('[data-act]');
+  if (!el) return;
+  const a = el.dataset.act;
+  switch (a) {
+    case 'go':
+      if (S.view === 'raise') readDraft();
+      S.view = el.dataset.v; store.set('view', S.view); S.matches = null; renderNav(); render(); window.scrollTo(0, 0);
+      if (S.view === 'insights' || S.view === 'faq') refresh(true);
+      break;
+    case 'refresh': refresh(false); flushQueue(); break;
+    case 'logout': logout(); break;
+    case 'pin': pinDialog(); break;
+    case 'pinsave':
+      try { await api('changePin', { oldPin: $('#p_old').value, newPin: $('#p_new').value }); toast('PIN changed.'); closeDrawer(); }
+      catch (err) { toast(err.message, true); } break;
+    case 'collapse': S.collapsed[el.dataset.id] = !S.collapsed[el.dataset.id]; store.set('collapsed', S.collapsed); el.parentElement.classList.toggle('closed'); break;
+    case 'tab': S.byMeTab = el.dataset.t; render(); break;
+    case 'open': openSlip(el.dataset.id, el.dataset.focus); break;
+    case 'closeDrawer': closeDrawer(); break;
+    case 'link': window.open(el.dataset.href, '_blank', 'noopener'); break;
+    case 'monday':
+      el.disabled = true;
+      try { await api('toggleMonday', { id: el.dataset.id }); await refresh(true); toast('Monday file updated.'); }
+      catch (err) { toast(err.message, true); el.disabled = false; } break;
+    case 'rtype': readDraft(); S.draft.type = el.dataset.t; render(); break;
+    case 'rclear': if (confirmClear()) { resetDraft(); render(); } break;
+    case 'rsubmit': el.disabled = true; await submitRaise(false); if (document.body.contains(el)) el.disabled = false; break;
+    case 'faqok': el.disabled = true; await faqResolve(el.dataset.id); break;
+    case 'faqno': el.disabled = true; S.matches = null; await sendSlip(); break;
+    case 'faqback': S.matches = null; render(); break;
+    case 'verdict': S.detail.verdict = el.dataset.v; {
+        const keep = ($('#rText') || {}).value; const fx = $('#faqAdd'); const chk = fx && fx.checked;
+        const fq = $('#fa_q') && [$('#fa_q').value, $('#fa_a').value, $('#fa_k').value, $('#fa_c').value];
+        renderDrawer();
+        if (keep) $('#rText').value = keep;
+        if (chk) { $('#faqAdd').checked = true; $('#faqFields').classList.remove('hide'); [$('#fa_q').value, $('#fa_a').value, $('#fa_k').value, $('#fa_c').value] = fq; }
+      } break;
+    case 'reply': await doReply(el.dataset.close === '1'); break;
+    case 'withdraw': case 'reopen':
+      try { S.detail = await api('setStatus', { id: S.detail.slip.SlipID, status: a === 'reopen' ? 'Open' : 'Closed' }); S.detail.verdict = S.detail.slip.Verdict || ''; renderDrawer(); refresh(true); toast(a === 'reopen' ? 'Re-opened.' : 'Closed.'); }
+      catch (err) { toast(err.message, true); } break;
+    case 'reassign':
+      try { S.detail = await api('reassign', { id: S.detail.slip.SlipID, to: $('#reTo').value }); toast('Reassigned.'); closeDrawer(); refresh(true); }
+      catch (err) { toast(err.message, true); } break;
+    case 'faqtoggle': el.parentElement.classList.toggle('open'); break;
+    case 'faqnew': faqEditor(); break;
+    case 'faqedit': faqEditor((S.boot.faq || []).find(f => f.id === el.dataset.id)); window.scrollTo({ top: 0, behavior: 'smooth' }); break;
+    case 'faqcancel': $('#faqEdit').innerHTML = ''; break;
+    case 'faqsave':
+      try { await api('faqSave', { faq: { id: el.dataset.id, question: $('#fe_q').value, answer: $('#fe_a').value, keywords: $('#fe_k').value, category: $('#fe_c').value } });
+        await refreshBoot(); toast('FAQ saved.'); render(); }
+      catch (err) { toast(err.message, true); } break;
+    case 'faqdel':
+      if (!window.confirm('Remove this FAQ from the bank?')) break;
+      try { await api('faqDelete', { id: el.dataset.id }); await refreshBoot(); toast('Removed.'); render(); }
+      catch (err) { toast(err.message, true); } break;
+  }
+});
+function confirmClear() { return window.confirm('Clear this slip form?'); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && S.detail) closeDrawer(); });
+window.addEventListener('online', () => { setOnline(true); flushQueue(); refresh(true); });
+window.addEventListener('offline', () => setOnline(false));
+setInterval(() => { if (document.visibilityState === 'visible' && S.view !== 'raise' && !S.detail) refresh(true); }, 60000);
+setInterval(flushQueue, 90000);
+
+/* ---------------------------- START ---------------------------- */
+if (S.token && S.boot && apiUrl()) startApp(); else showLogin();
+</script>
+</body>
+</html>
