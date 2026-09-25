@@ -345,10 +345,14 @@ async function api(action, payload = {}) {
     setOnline(false);
     const err = new Error('No internet connection.'); err.offline = true; throw err;
   }
-  let j;
-  try { j = await res.json(); } catch (e) {
-    setOnline(false);
-    const err = new Error('Server did not respond properly. Check the Web-app URL / deployment.'); err.offline = true; throw err;
+  let j, raw = '';
+  try { raw = await res.text(); j = JSON.parse(raw); } catch (e) {
+    setOnline(true);
+    let why = 'The server replied with a web page instead of data (HTTP ' + res.status + ').';
+    if (/accounts\.google|ServiceLogin|signin/i.test(raw)) why = 'Google asked for sign-in: set the deployment "Who has access" to Anyone (Deploy > Manage deployments > Edit).';
+    else if (/Script function not found/i.test(raw)) why = 'Script function missing: save Code.gs, then Deploy > Manage deployments > Edit > New version.';
+    else if (/Sorry, unable to open the file|could not be found|404/i.test(raw)) why = 'Web-app URL not found: copy the /exec URL again from Deploy > Manage deployments.';
+    throw new Error(why);
   }
   setOnline(true);
   if (!j.ok) {
@@ -647,6 +651,11 @@ function viewRaise() {
   const pastClients = [...new Set((S.byMe ? S.byMe.slips : []).map(s => s.Client).filter(Boolean))];
   const min = b.minProbable || 15;
   if (S.matches) return viewMatches();
+  if (!ans.length) return `<h1>Raise a Slip</h1><p class="sub">Ask for help, send work for review or report a problem.</p>
+    <div class="must"><h3>${ic('help')} No reviewer to send to</h3>
+    <p class="hint" style="margin:0">You are the only person marked <b>CanAnswer = Y</b>, and a slip cannot be sent to yourself.
+    In the Google Sheet's <b>Users</b> tab, add at least one other person (e.g. a Manager) with <b>CanAnswer = Y</b> and <b>Active = Y</b>, then click <b>Refresh</b> at the top.
+    Staff log in with their own e-mail and PIN; you will then receive their slips under <b>Raised to Me</b>.</p></div>`;
   return `<h1>Raise a Slip</h1><p class="sub">Ask for help, send work for review or report a problem.</p>
   <div id="rErr"></div>
   <div class="card">
@@ -686,7 +695,7 @@ function readDraft() {
   store.set('draft', S.draft);
 }
 function bindRaise() {
-  if (S.matches) return;
+  if (S.matches || !$('#r_title')) return;
   const min = S.boot.minProbable || 15;
   const upd = () => {
     readDraft();
