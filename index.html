@@ -191,6 +191,7 @@ h1{font-size:30px;margin:0 0 6px;font-weight:700;letter-spacing:-.4px;color:var(
 .compose{border-top:1px solid var(--line);padding:16px 24px;background:#fafbfd}
 .compose textarea{width:100%;border:1px solid #d5dde7;border-radius:9px;padding:10px 12px;min-height:90px;resize:vertical;outline:none}
 .compose textarea:focus{border-color:var(--green)}
+.compose .locked{margin:0;color:var(--ink-2);display:flex;align-items:center;gap:8px}
 .faqbox{border:1px dashed #c9b6ec;background:#fbf9fe;border-radius:10px;padding:12px 14px;margin-top:10px}
 .chk{display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--ink-2);margin-top:10px}
 
@@ -293,6 +294,7 @@ table.t td.n{text-align:right;font-variant-numeric:tabular-nums}
   <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="m10.8 12.2 9.2-9.2M17 6l3 3"/></symbol>
   <symbol id="i-bulb" viewBox="0 0 24 24"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/></symbol>
   <symbol id="i-wifi" viewBox="0 0 24 24"><path d="M2 8.8a15 15 0 0 1 20 0M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0M12 20h.01"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
 </svg>
 
 <script>
@@ -876,8 +878,12 @@ function raiserFirst(s) { return String(s.RaisedByName || 'Staff').split(' ')[0]
 
 function composer(s, isAns, isRaiser, closed) {
   if (closed) {
-    return (isRaiser || isAns) && s.Status === 'Closed'
-      ? `<div class="compose"><div class="bar"><button class="btn" data-act="reopen">Re-open slip</button></div></div>` : '';
+    // Only the reviewer the slip was sent to, or a Partner, can re-open a closed slip.
+    const me = S.boot.me;
+    const canReopen = s.Status === 'Closed' && (s.AssignedTo === me.email || me.role === 'Partner');
+    if (canReopen) return `<div class="compose"><div class="bar"><button class="btn" data-act="reopen">Re-open slip</button></div></div>`;
+    if (isRaiser) return `<div class="compose"><p class="locked">${ic('lock')}This slip is closed. If you still need help, raise a new slip.</p></div>`;
+    return '';
   }
   if (isAns) {
     const cats = S.boot.categories;
