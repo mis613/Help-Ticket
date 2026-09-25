@@ -1065,7 +1065,7 @@ function composer(s, isAns, isRaiser, closed) {
     return `<div class="compose">
       <textarea id="rText" placeholder="${s.Status === 'Answered' ? 'Still unclear? Ask a follow-up…' : 'Add more information…'}"></textarea>
       <div class="bar" style="margin-top:12px"><button class="btn" data-act="reply" data-close="0">${ic('send')}Send</button>
-      ${s.Status === 'Answered' ? `<button class="btn pri" data-act="reply" data-close="1">${ic('check')}Solved, close slip</button>` : `<button class="btn" data-act="withdraw">Withdraw / close</button>`}</div>
+      ${s.Status === 'Answered' ? `<button class="btn pri" data-act="reply" data-close="1">${ic('check')}Solved, close slip</button>` : `<button class="btn" data-act="withdraw"></button>`}</div>
     </div>`;
   }
   return '';
