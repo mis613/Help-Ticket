@@ -234,6 +234,31 @@ table.t td.n{text-align:right;font-variant-numeric:tabular-nums}
 #toast.bad{background:var(--red)}
 .hide{display:none!important}
 
+/* ---------- ticket tracking ---------- */
+.trk{display:flex;align-items:flex-start;margin:0 0 8px;padding:14px 10px 12px;border:1px solid var(--line);border-radius:12px;background:#fafbfd}
+.trk .sp{flex:1;position:relative;text-align:center;font-size:12.5px;color:var(--ink-3);min-width:0}
+.trk .sp i{display:block;width:14px;height:14px;border-radius:50%;border:2px solid #cfd8e3;background:#fff;margin:0 auto 6px;position:relative;z-index:1}
+.trk .sp::before{content:"";position:absolute;top:6px;left:-50%;width:100%;height:2px;background:#dfe5ec}
+.trk .sp:first-child::before{display:none}
+.trk .sp.on{color:var(--green-ink)}
+.trk .sp.on i{background:var(--green);border-color:var(--green)}
+.trk .sp.on::before{background:var(--green)}
+.trk .sp.cur i{box-shadow:0 0 0 4px rgba(46,158,107,.18)}
+.trk .sp b{display:block;font-weight:600}
+.trk .sp small{display:block;color:var(--ink-3);font-size:11.5px;margin-top:1px;font-weight:400}
+.trk.sm{margin:7px 0 0;padding:0;border:0;background:none;max-width:360px}
+.trk.sm .sp{font-size:11px}
+.trk.sm .sp b{font-weight:500}
+.trk.sm .sp i{width:10px;height:10px;margin-bottom:3px;border-width:2px}
+.trk.sm .sp::before{top:4px}
+.now{font-size:13px;color:var(--ink-2);margin:0 0 18px;display:flex;gap:6px;align-items:center}
+.now b{color:var(--navy)}
+.tw{overflow-x:auto}
+tr.pp{cursor:pointer}
+tr.pp:hover td{background:#f7f9fb}
+tr.pp.sel td{background:var(--green-soft)}
+.search select{border:1px solid #d5dde7;border-radius:10px;padding:0 12px;background:#fff;min-width:170px}
+
 @media (max-width:900px){
   #shell{flex-direction:column}
   aside{width:100%;height:auto;position:static;border-right:0;border-bottom:3px solid var(--green)}
@@ -245,6 +270,8 @@ table.t td.n{text-align:right;font-variant-numeric:tabular-nums}
   .row{grid-template-columns:1fr auto;gap:8px}
   .row .st,.row .due{display:none}
   .grid,.must .two,.seg,.prob,.meta,.kpis{grid-template-columns:1fr}
+  .search{flex-direction:column}
+  .search select{padding:10px 12px}
 }
 </style>
 </head>
@@ -293,6 +320,7 @@ table.t td.n{text-align:right;font-variant-numeric:tabular-nums}
   <symbol id="i-out" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></symbol>
   <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="m10.8 12.2 9.2-9.2M17 6l3 3"/></symbol>
   <symbol id="i-bulb" viewBox="0 0 24 24"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h12M9 12h12M9 18h12"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></symbol>
   <symbol id="i-wifi" viewBox="0 0 24 24"><path d="M2 8.8a15 15 0 0 1 20 0M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0M12 20h.01"/></symbol>
   <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
 </svg>
@@ -328,7 +356,9 @@ const S = {
   busy: false,
   faqQuery: '',
   matches: null,
-  collapsed: store.get('collapsed', {})
+  collapsed: store.get('collapsed', {}),
+  all: null,
+  allF: { status: 'Open', person: '', q: '' }
 };
 
 /* ---------------------------- API ---------------------------- */
@@ -465,7 +495,7 @@ function showLogin(msg) {
       const d = await api('login', { email: $('#lgEmail').value, pin: $('#lgPin').value });
       S.token = d.token; S.boot = d.boot;
       store.set('token', S.token); store.set('boot', S.boot); store.set('lastEmail', $('#lgEmail').value.trim());
-      S.view = S.boot.me.canAnswer ? 'toMe' : 'byMe';
+      S.view = S.boot.me.canAnswer ? 'toMe' : 'raise';
       startApp();
     } catch (err) { showLogin(err.message); }
   };
@@ -487,21 +517,37 @@ function startApp() {
   const me = S.boot.me;
   $('#meBox').innerHTML = `<b>${esc(me.name)}</b>${esc(String(me.role || '').toUpperCase())} · ${esc(me.dept || '')}<br>${esc(me.email)}
     <div class="btns"><button data-act="pin">${ic('key')}PIN</button><button data-act="logout">${ic('out')}Log out</button></div>`;
-  if (!me.canAnswer && (S.view === 'toMe' || S.view === 'insights')) S.view = 'byMe';
   renderNav(); render();
   refresh(false);
   flushQueue();
 }
 
-function renderNav() {
+/*  Menu by role:
+ *   Staff            -> Raise a Ticket, My Tickets (with tracking)
+ *   Partner/Manager  -> Queries to Answer, All Tickets (tracking), FAQ Bank, Insights
+ *                       (+ Raise a Ticket only if another Partner/Manager exists to send to,
+ *                        + Raised by Me only if they have raised slips themselves)        */
+function navItems() {
   const me = S.boot.me;
+  const reviewer = !!me.canAnswer;
   const openToMe = S.toMe ? S.toMe.open.filter(s => !s.batched).length : 0;
   const answeredByMe = S.byMe ? S.byMe.slips.filter(s => s.Status === 'Answered').length : 0;
+  const canRaise = (S.boot.answerers || []).some(a => a.email !== me.email);
+  const hasOwn = (S.byMe && S.byMe.slips.length) || S.queue.length;
   const items = [];
-  if (me.canAnswer) items.push(['toMe', 'inbox', 'Raised to Me', openToMe]);
-  items.push(['byMe', 'send', 'Raised by Me', answeredByMe]);
-  items.push(['raise', 'plus', 'Raise a Slip', 0, 'raise']);
-  if (me.canAnswer) items.push(['insights', 'chart', 'Insights', 0]);
+  if (reviewer) items.push(['toMe', 'inbox', 'Queries to Answer', openToMe]);
+  if (reviewer) items.push(['all', 'list', 'All Tickets', 0]);
+  if (!reviewer) items.push(['raise', 'plus', 'Raise a Ticket', 0, 'raise']);
+  if (!reviewer || hasOwn) items.push(['byMe', 'send', reviewer ? 'Raised by Me' : 'My Tickets', answeredByMe]);
+  if (reviewer && canRaise) items.push(['raise', 'plus', 'Raise a Ticket', 0, 'raise']);
+  if (reviewer) items.push(['faq', 'book', 'FAQ Bank', 0]);   // FAQ Bank page: Partners and Managers only
+  if (reviewer) items.push(['insights', 'chart', 'Insights', 0]);
+  return { items, openToMe, answeredByMe };
+}
+
+function renderNav() {
+  const { items, openToMe, answeredByMe } = navItems();
+  if (!items.some(i => i[0] === S.view)) { S.view = items[0][0]; store.set('view', S.view); render(); }
   $('#nav').innerHTML = items.map(([v, i, t, c, cls]) =>
     `<button class="nav ${cls || ''} ${S.view === v ? 'on' : ''}" data-act="go" data-v="${v}">${ic(i)}${t}${c ? `<span class="cnt">${c}</span>` : ''}</button>`).join('');
   const bell = openToMe + answeredByMe;
@@ -522,10 +568,12 @@ async function refresh(quiet) {
     const jobs = [api('byMe').then(d => { S.byMe = d; store.set('c_byMe', d); })];
     if (S.boot.me.canAnswer) jobs.push(api('toMe').then(d => { S.toMe = d; store.set('c_toMe', d); }));
     if (S.view === 'insights') jobs.push(api('insights').then(d => S.insights = d));
+    if (S.view === 'all') jobs.push(api('allSlips').then(d => S.all = d));
     if (S.view === 'faq' || !quiet) jobs.push(api('bootstrap').then(d => { S.boot = d; store.set('boot', d); IDX = null; }));
     await Promise.all(jobs);
-    if (S.view !== 'raise') render();
-    renderNav();
+    const before = S.view;
+    renderNav();                                   // may move the user off a page their role cannot use
+    if (S.view !== 'raise' || before !== S.view) render();
   } catch (e) {
     if (!e.offline && !e.auth && !quiet) toast(e.message, true);
   } finally { S.busy = false; setRefreshing(false); setOnline(S.online); }
@@ -539,6 +587,7 @@ function render() {
   else if (S.view === 'raise') { c.innerHTML = viewRaise(); bindRaise(); }
   else if (S.view === 'faq') { c.innerHTML = viewFaq(); bindFaq(); }
   else if (S.view === 'insights') c.innerHTML = viewInsights();
+  else if (S.view === 'all') { c.innerHTML = viewAll(); bindAll(); }
 }
 
 function statusPill(s) {
@@ -563,25 +612,119 @@ function ago(iso) {
 }
 
 function slipRow(s, mode) {
+  const me = S.boot.me;
+  const closed = s.Status === 'Closed' || s.Status === 'Auto-closed';
   const dueTxt = s.late ? `${s.daysLate}d late` : (s.Status === 'Open' ? fmtDate(s.DueDate) : fmtDate(String(s.UpdatedAt).slice(0, 10)));
   const lastLine = s.last && s.last.kind !== 'System'
     ? `<div class="m"><b>${esc(String(s.last.by || '').split(' ')[0])}:</b> ${esc(s.last.text)} · ${ago(s.last.at)}</div>`
     : `<div class="m">${esc(s.SlipID)} · ${esc(s.Category)}${s.Client ? ' · ' + esc(s.Client) : ''}</div>`;
   const toMe = mode === 'toMe';
-  const sentTo = toMe && s.AssignedTo !== S.boot.me.email
-    ? `<div class="m">Sent to ${esc(s.AssignedName)}</div>` : '';
+  const canAns = (toMe || mode === 'all') && me.canAnswer && s.RaisedBy !== me.email && !closed;
+  const extra = mode === 'all'
+    ? `<div class="m">${esc(s.RaisedByName)} → ${esc(s.AssignedName)} · ${esc(trackNow(s))}</div>`
+    : toMe && s.AssignedTo !== me.email ? `<div class="m">Sent to ${esc(s.AssignedName)}</div>`
+    : mode === 'byMe' ? tracker(s, true) : '';
   return `<div class="row ${s.late ? 'late' : ''}">
     <div class="st">${statusPill(s)}</div>
-    <div class="ttl"><div class="t">${esc(s.Title)} <span class="q">— ${esc(s.Question)}</span></div>${lastLine}${sentTo}</div>
+    <div class="ttl"><div class="t">${esc(s.Title)} <span class="q">— ${esc(s.Question)}</span></div>${lastLine}${extra}</div>
     <span class="pri pri-${esc(s.Priority)}">${esc(s.Priority)}</span>
     <div class="due mono ${s.late ? 'late' : ''}">${dueTxt}</div>
     <div class="acts">
-      ${toMe ? `<button class="ib ok" title="Answer &amp; close" data-act="open" data-id="${esc(s.SlipID)}" data-focus="1">${ic('check')}</button>
-      <button class="ib ${s.batched ? 'on' : ''}" title="${s.batched ? 'Take out of Monday file' : 'Move to Monday file'}" data-act="monday" data-id="${esc(s.SlipID)}">${ic('cal')}</button>` : ''}
+      ${canAns ? `<button class="ib ok" title="Answer" data-act="open" data-id="${esc(s.SlipID)}" data-focus="1">${ic('check')}</button>` : ''}
+      ${toMe ? `<button class="ib ${s.batched ? 'on' : ''}" title="${s.batched ? 'Take out of Monday file' : 'Move to Monday file'}" data-act="monday" data-id="${esc(s.SlipID)}">${ic('cal')}</button>` : ''}
       <button class="ib" title="Open linked file" ${s.FileLink ? `data-act="link" data-href="${esc(s.FileLink)}"` : 'disabled'}>${ic('ext')}</button>
-      <button class="ib" title="Open slip" ${s._queued ? 'disabled' : `data-act="open" data-id="${esc(s.SlipID)}"`}>${ic('right')}</button>
+      <button class="ib" title="Open ticket" ${s._queued ? 'disabled' : `data-act="open" data-id="${esc(s.SlipID)}"`}>${ic('right')}</button>
     </div>
   </div>`;
+}
+
+/* ---------------------------- TRACKING ---------------------------- */
+/* Every ticket moves Raised > Seen > Answered > Closed. */
+function fmtDT(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return isNaN(d) ? '' : d.toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+}
+function trackSteps(s) {
+  const auto = s.Status === 'Auto-closed';
+  const closed = s.Status === 'Closed' || auto;
+  const answeredAt = s.FirstAnsweredAt || '';
+  const seenAt = s.SeenAt || answeredAt;
+  return [
+    { k: 'Raised', at: s.CreatedAt, on: !s._queued },
+    { k: 'Seen', at: seenAt, on: !!seenAt || closed },
+    { k: auto ? 'FAQ answer' : 'Answered', at: answeredAt, on: !!answeredAt || auto },
+    { k: 'Closed', at: s.ClosedAt, on: closed }
+  ];
+}
+function trackNow(s) {
+  const who = String(s.AssignedName || 'the reviewer').split(' ')[0];
+  const raiser = String(s.RaisedByName || 'staff').split(' ')[0];
+  if (s._queued) return 'Saved on this PC, will send when online';
+  if (s.Status === 'Auto-closed') return 'Solved from the FAQ bank';
+  if (s.Status === 'Closed') return 'Closed' + (s.ClosedBy ? ' by ' + s.ClosedBy : '');
+  if (s.Status === 'Answered') return S.boot.me.email === s.RaisedBy ? 'Answered: read it, then close or ask again' : `Answered, waiting on ${raiser}`;
+  if (s.batched) return 'Parked for the Monday review';
+  if (s.SeenAt) return `Seen by ${who}, answer pending`;
+  return `Waiting for ${who} to see it`;
+}
+function tracker(s, compact) {
+  const st = trackSteps(s);
+  let cur = -1; st.forEach((x, i) => { if (x.on) cur = i; });
+  return `<div class="trk ${compact ? 'sm' : ''}">${st.map((x, i) =>
+    `<div class="sp ${x.on ? 'on' : ''} ${i === cur ? 'cur' : ''}"><i></i><b>${x.k}</b>${!compact && x.on && x.at ? `<small>${fmtDT(x.at)}</small>` : ''}</div>`).join('')}</div>`;
+}
+
+/* ---------------------------- ALL TICKETS (Partner / Manager) ---------------------------- */
+function viewAll() {
+  const d = S.all;
+  if (!d) return `<h1>All Tickets</h1><p class="sub">Loading…</p>`;
+  const F = S.allF;
+  const slips = d.slips || [];
+  const isClosed = s => s.Status === 'Closed' || s.Status === 'Auto-closed';
+  const tabs = { Open: s => s.Status === 'Open', Answered: s => s.Status === 'Answered', Closed: isClosed, All: () => true };
+  const byPerson = s => !F.person || String(s.RaisedBy).toLowerCase() === F.person;
+  const q = F.q.trim().toLowerCase();
+  const match = s => !q || [s.SlipID, s.Title, s.Question, s.Client, s.Category, s.RaisedByName, s.AssignedName].join(' ').toLowerCase().includes(q);
+
+  const ppl = {};
+  slips.forEach(s => {
+    const k = String(s.RaisedBy).toLowerCase(); const u = (d.users || {})[k] || {};
+    const r = ppl[k] || (ppl[k] = { k, name: s.RaisedByName, dept: u.dept || '', open: 0, answered: 0, closed: 0, late: 0, last: '' });
+    if (s.Status === 'Open') r.open++; else if (s.Status === 'Answered') r.answered++; else r.closed++;
+    if (s.late) r.late++;
+    if (String(s.UpdatedAt) > r.last) r.last = String(s.UpdatedAt);
+  });
+  const people = Object.values(ppl).sort((a, b) => (b.open + b.answered) - (a.open + a.answered) || b.last.localeCompare(a.last));
+  const list = slips.filter(tabs[F.status]).filter(byPerson).filter(match);
+  const cnt = t => slips.filter(tabs[t]).filter(byPerson).filter(match).length;
+  const month = Date.now() - 30 * 86400000;
+  const kp = {
+    open: slips.filter(tabs.Open).length,
+    waiting: slips.filter(tabs.Answered).length,
+    late: slips.filter(s => s.late).length,
+    closed: slips.filter(s => isClosed(s) && new Date(s.ClosedAt || s.UpdatedAt).getTime() > month).length
+  };
+  return `<h1>All Tickets</h1><p class="sub">Track every ticket from the team: who raised it, where it stands and who is on it.</p>
+  <div class="kpis"><div class="kpi"><span>Open now</span><b>${kp.open}</b></div><div class="kpi"><span>Answered, waiting on staff</span><b>${kp.waiting}</b></div>
+  <div class="kpi"><span>Late</span><b style="color:${kp.late ? 'var(--red)' : 'var(--navy)'}">${kp.late}</b></div><div class="kpi"><span>Closed (30 days)</span><b>${kp.closed}</b></div></div>
+  <div class="card"><h3>By person</h3><p class="hint">Click a name to see only their tickets. Click again to see everyone.</p>
+  ${people.length ? `<div class="tw"><table class="t"><tr><th>Staff</th><th>Dept</th><th class="n">Open</th><th class="n">Answered</th><th class="n">Closed</th><th class="n">Late</th><th>Last activity</th></tr>
+  ${people.map(p => `<tr class="pp ${F.person === p.k ? 'sel' : ''}" data-act="allperson" data-p="${esc(p.k)}"><td><b>${esc(p.name)}</b></td><td>${esc(p.dept)}</td>
+    <td class="n">${p.open}</td><td class="n">${p.answered}</td><td class="n">${p.closed}</td><td class="n" style="color:${p.late ? 'var(--red)' : 'inherit'}">${p.late}</td><td>${ago(p.last)}</td></tr>`).join('')}</table></div>`
+    : '<div class="empty">No tickets raised yet.</div>'}</div>
+  <div class="search"><input id="allQ" placeholder="Search by ticket no., title, client or person…" value="${esc(F.q)}">
+    <select id="allP"><option value="">Everyone</option>${people.map(p => `<option value="${esc(p.k)}" ${F.person === p.k ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select></div>
+  <div class="tabs">${Object.keys(tabs).map(t => `<button class="${F.status === t ? 'on' : ''}" data-act="alltab" data-t="${t}">${t} (${cnt(t)})</button>`).join('')}</div>
+  ${list.length ? `<div class="sec"><div class="sec-b" style="padding:0">${list.map(s => slipRow(s, 'all')).join('')}</div></div>`
+    : `<div class="empty">No tickets match.</div>`}`;
+}
+function bindAll() {
+  const i = $('#allQ'), p = $('#allP');
+  if (!i) return;
+  let t;
+  i.addEventListener('input', () => { clearTimeout(t); t = setTimeout(() => { S.allF.q = i.value; const pos = i.selectionStart; render(); const n = $('#allQ'); n.focus(); n.setSelectionRange(pos, pos); }, 220); });
+  p.addEventListener('change', () => { S.allF.person = p.value; render(); });
 }
 
 function groupByPerson(list, key, users) {
@@ -604,7 +747,7 @@ function section(id, icon, title, desc, count, body) {
 }
 
 function viewToMe() {
-  if (!S.toMe) return `<h1>Raised to Me</h1><p class="sub">Loading…</p>`;
+  if (!S.toMe) return `<h1>Queries to Answer</h1><p class="sub">Loading…</p>`;
   const users = S.toMe.users || {};
   const open = S.toMe.open.slice().sort((a, b) =>
     (b.late - a.late) || ({ HIGH: 0, MEDIUM: 1, LOW: 2 }[a.Priority] - { HIGH: 0, MEDIUM: 1, LOW: 2 }[b.Priority]) || String(a.DueDate).localeCompare(String(b.DueDate)));
@@ -615,10 +758,10 @@ function viewToMe() {
   const mondayDate = monday.length ? new Date(monday[0].MondayFile + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' }) : '';
   const mondayBlock = monday.length ? `<div class="batch"><span class="tag">MONDAY FILE</span><span class="t">Batched for ${mondayDate}, grouped by person.</span><span class="c">${monday.length}</span></div>${groupByPerson(monday, 'RaisedBy', users)}` : '';
   const help = by('Help'), rev = by('Review'), tk = by('Ticket');
-  return `<h1>Raised to Me</h1><p class="sub">Every open slip from the team. Partners and Managers can answer any of them.</p>
+  return `<h1>Queries to Answer</h1><p class="sub">Every open slip from the team. Open one, answer it, and the answer is saved to the FAQ bank for next time.</p>
     ${section('help', 'help', 'Help Slips', 'Colleagues stuck on something, grouped by person.', help.length, body(help, 'Nobody is stuck right now.'))}
     ${section('review', 'eye', 'Review Slips', 'Work waiting on your read, grouped by person.', rev.length, (rev.length ? groupByPerson(rev, 'RaisedBy', users) : (monday.length ? '' : `<div class="empty">Nothing to review.</div>`)) + mondayBlock)}
-    ${section('ticket', 'ticket', 'Tickets', 'Problems handed to you to fix or chase.', tk.length, body(tk, 'Nothing addressed to you.'))}
+    ${section('ticket', 'ticket', 'Tickets', 'Problems to fix or chase, grouped by person.', tk.length, body(tk, 'No open tickets.'))}
     ${S.toMe.answered.length ? section('answered', 'send', 'Answered, waiting on staff', 'You replied; the staff member has not closed it yet.', S.toMe.answered.length, groupByPerson(S.toMe.answered, 'RaisedBy', users)) : ''}`;
 }
 
@@ -631,11 +774,11 @@ function viewByMe() {
     Closed: s => s.Status === 'Closed' || s.Status === 'Auto-closed', All: () => true };
   const list = all.filter(tabs[S.byMeTab]);
   const answered = all.filter(tabs.Answered).length;
-  return `<h1>Raised by Me</h1><p class="sub">Your slips and the replies you have received.</p>
+  return `<h1>${S.boot.me.canAnswer ? 'Raised by Me' : 'My Tickets'}</h1><p class="sub">Track each ticket you raised: raised, seen, answered, closed.</p>
     <div class="tabs">${Object.keys(tabs).map(t => `<button class="${S.byMeTab === t ? 'on' : ''}" data-act="tab" data-t="${t}">${t}${t === 'Answered' && answered ? ` (${answered})` : ''}</button>`).join('')}</div>
     ${!S.byMe && !queued.length ? '<p class="sub">Loading…</p>' :
       list.length ? `<div class="sec"><div class="sec-b">${groupByPerson(list, 'AssignedTo', S.toMe ? S.toMe.users : {})}</div></div>`
-      : `<div class="empty">No slips here. Use <b>Raise a Slip</b> when you are stuck.</div>`}`;
+      : `<div class="empty">No tickets here. Use <b>Raise a Ticket</b> when you are stuck.</div>`}`;
 }
 
 /* ---------------------------- RAISE A SLIP ---------------------------- */
@@ -654,11 +797,11 @@ function viewRaise() {
   const pastClients = [...new Set((S.byMe ? S.byMe.slips : []).map(s => s.Client).filter(Boolean))];
   const min = b.minProbable || 15;
   if (S.matches) return viewMatches();
-  if (!ans.length) return `<h1>Raise a Slip</h1><p class="sub">Ask for help, send work for review or report a problem.</p>
+  if (!ans.length) return `<h1>Raise a Ticket</h1><p class="sub">Ask for help, send work for review or report a problem. You can track it under <b>My Tickets</b>.</p>
     <div class="must"><h3>${ic('help')} No reviewer to send to</h3>
     <p class="hint" style="margin:0">Slips go to a <b>Partner</b> or <b>Manager</b>, and a slip cannot be sent to yourself.
     In the Google Sheet's <b>Users</b> tab, add at least one other person with <b>Role = Partner</b> or <b>Manager</b> and <b>Active = Y</b>, then click <b>Refresh</b> at the top.</p></div>`;
-  return `<h1>Raise a Slip</h1><p class="sub">Ask for help, send work for review or report a problem.</p>
+  return `<h1>Raise a Ticket</h1><p class="sub">Ask for help, send work for review or report a problem. You can track it under <b>My Tickets</b>.</p>
   <div id="rErr"></div>
   <div class="card">
     <h3>1. What kind of slip?</h3><p class="hint">Pick one.</p>
@@ -849,6 +992,7 @@ function renderDrawer(focus) {
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${statusPill(s)}<span class="pri pri-${esc(s.Priority)}">${esc(s.Priority)}</span>${s.late ? `<span class="due late mono">${s.daysLate}d late</span>` : ''}</div></div>
     <button class="ib x" data-act="closeDrawer">${ic('x')}</button></div>
   <div class="db">
+    ${tracker(s)}<p class="now">${ic('eye')}<span>Now: <b>${esc(trackNow(s))}</b></span></p>
     <div class="meta">
       <div><span>Raised by</span>${esc(s.RaisedByName)}</div><div><span>Sent to</span>${esc(s.AssignedName)}</div><div><span>Category</span>${esc(s.Category)}</div>
       <div><span>Client</span>${esc(s.Client || '–')}</div><div><span>Raised</span>${new Date(s.CreatedAt).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })}</div><div><span>Due</span>${fmtDate(s.DueDate)}${s.MondayFile ? ' (Monday file)' : ''}</div>
@@ -921,7 +1065,7 @@ function composer(s, isAns, isRaiser, closed) {
     return `<div class="compose">
       <textarea id="rText" placeholder="${s.Status === 'Answered' ? 'Still unclear? Ask a follow-up…' : 'Add more information…'}"></textarea>
       <div class="bar" style="margin-top:12px"><button class="btn" data-act="reply" data-close="0">${ic('send')}Send</button>
-      ${s.Status === 'Answered' ? `<button class="btn pri" data-act="reply" data-close="1">${ic('check')}Solved, close slip</button>` : `<button class="btn" data-act="withdraw"></button>`}</div>
+      ${s.Status === 'Answered' ? `<button class="btn pri" data-act="reply" data-close="1">${ic('check')}Solved, close slip</button>` : `<button class="btn" data-act="withdraw">Withdraw / close</button>`}</div>
     </div>`;
   }
   return '';
@@ -960,6 +1104,7 @@ async function refreshBoot() { try { S.boot = await api('bootstrap'); store.set(
 
 /* ---------------------------- FAQ BANK ---------------------------- */
 function viewFaq() {
+  if (!S.boot.me.canAnswer) return `<h1>FAQ Bank</h1><div class="empty">The FAQ Bank is for Partners and Managers.</div>`;
   const faq = (S.boot.faq || []).slice();
   const q = S.faqQuery.trim();
   let list;
@@ -1029,7 +1174,7 @@ document.addEventListener('click', async e => {
     case 'go':
       if (S.view === 'raise') readDraft();
       S.view = el.dataset.v; store.set('view', S.view); S.matches = null; renderNav(); render(); window.scrollTo(0, 0);
-      if (S.view === 'insights' || S.view === 'faq') refresh(true);
+      if (S.view === 'insights' || S.view === 'faq' || S.view === 'all') refresh(true);
       break;
     case 'refresh': refresh(false); flushQueue(); break;
     case 'logout': logout(); break;
@@ -1039,6 +1184,8 @@ document.addEventListener('click', async e => {
       catch (err) { toast(err.message, true); } break;
     case 'collapse': S.collapsed[el.dataset.id] = !S.collapsed[el.dataset.id]; store.set('collapsed', S.collapsed); el.parentElement.classList.toggle('closed'); break;
     case 'tab': S.byMeTab = el.dataset.t; render(); break;
+    case 'alltab': S.allF.status = el.dataset.t; render(); break;
+    case 'allperson': S.allF.person = S.allF.person === el.dataset.p ? '' : el.dataset.p; render(); break;
     case 'open': openSlip(el.dataset.id, el.dataset.focus); break;
     case 'closeDrawer': closeDrawer(); break;
     case 'link': window.open(el.dataset.href, '_blank', 'noopener'); break;
