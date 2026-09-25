@@ -499,7 +499,6 @@ function renderNav() {
   if (me.canAnswer) items.push(['toMe', 'inbox', 'Raised to Me', openToMe]);
   items.push(['byMe', 'send', 'Raised by Me', answeredByMe]);
   items.push(['raise', 'plus', 'Raise a Slip', 0, 'raise']);
-  items.push(['faq', 'book', 'FAQ Bank', 0]);
   if (me.canAnswer) items.push(['insights', 'chart', 'Insights', 0]);
   $('#nav').innerHTML = items.map(([v, i, t, c, cls]) =>
     `<button class="nav ${cls || ''} ${S.view === v ? 'on' : ''}" data-act="go" data-v="${v}">${ic(i)}${t}${c ? `<span class="cnt">${c}</span>` : ''}</button>`).join('');
