@@ -568,9 +568,11 @@ function slipRow(s, mode) {
     ? `<div class="m"><b>${esc(String(s.last.by || '').split(' ')[0])}:</b> ${esc(s.last.text)} · ${ago(s.last.at)}</div>`
     : `<div class="m">${esc(s.SlipID)} · ${esc(s.Category)}${s.Client ? ' · ' + esc(s.Client) : ''}</div>`;
   const toMe = mode === 'toMe';
+  const sentTo = toMe && s.AssignedTo !== S.boot.me.email
+    ? `<div class="m">Sent to ${esc(s.AssignedName)}</div>` : '';
   return `<div class="row ${s.late ? 'late' : ''}">
     <div class="st">${statusPill(s)}</div>
-    <div class="ttl"><div class="t">${esc(s.Title)} <span class="q">— ${esc(s.Question)}</span></div>${lastLine}</div>
+    <div class="ttl"><div class="t">${esc(s.Title)} <span class="q">— ${esc(s.Question)}</span></div>${lastLine}${sentTo}</div>
     <span class="pri pri-${esc(s.Priority)}">${esc(s.Priority)}</span>
     <div class="due mono ${s.late ? 'late' : ''}">${dueTxt}</div>
     <div class="acts">
@@ -613,7 +615,7 @@ function viewToMe() {
   const mondayDate = monday.length ? new Date(monday[0].MondayFile + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' }) : '';
   const mondayBlock = monday.length ? `<div class="batch"><span class="tag">MONDAY FILE</span><span class="t">Batched for ${mondayDate}, grouped by person.</span><span class="c">${monday.length}</span></div>${groupByPerson(monday, 'RaisedBy', users)}` : '';
   const help = by('Help'), rev = by('Review'), tk = by('Ticket');
-  return `<h1>Raised to Me</h1><p class="sub">Everything waiting on you: help, reviews and tickets.</p>
+  return `<h1>Raised to Me</h1><p class="sub">Every open slip from the team. Partners and Managers can answer any of them.</p>
     ${section('help', 'help', 'Help Slips', 'Colleagues stuck on something, grouped by person.', help.length, body(help, 'Nobody is stuck right now.'))}
     ${section('review', 'eye', 'Review Slips', 'Work waiting on your read, grouped by person.', rev.length, (rev.length ? groupByPerson(rev, 'RaisedBy', users) : (monday.length ? '' : `<div class="empty">Nothing to review.</div>`)) + mondayBlock)}
     ${section('ticket', 'ticket', 'Tickets', 'Problems handed to you to fix or chase.', tk.length, body(tk, 'Nothing addressed to you.'))}
@@ -654,9 +656,8 @@ function viewRaise() {
   if (S.matches) return viewMatches();
   if (!ans.length) return `<h1>Raise a Slip</h1><p class="sub">Ask for help, send work for review or report a problem.</p>
     <div class="must"><h3>${ic('help')} No reviewer to send to</h3>
-    <p class="hint" style="margin:0">You are the only person marked <b>CanAnswer = Y</b>, and a slip cannot be sent to yourself.
-    In the Google Sheet's <b>Users</b> tab, add at least one other person (e.g. a Manager) with <b>CanAnswer = Y</b> and <b>Active = Y</b>, then click <b>Refresh</b> at the top.
-    Staff log in with their own e-mail and PIN; you will then receive their slips under <b>Raised to Me</b>.</p></div>`;
+    <p class="hint" style="margin:0">Slips go to a <b>Partner</b> or <b>Manager</b>, and a slip cannot be sent to yourself.
+    In the Google Sheet's <b>Users</b> tab, add at least one other person with <b>Role = Partner</b> or <b>Manager</b> and <b>Active = Y</b>, then click <b>Refresh</b> at the top.</p></div>`;
   return `<h1>Raise a Slip</h1><p class="sub">Ask for help, send work for review or report a problem.</p>
   <div id="rErr"></div>
   <div class="card">
@@ -837,7 +838,7 @@ function renderDrawer(focus) {
   const { slip: s, replies, faq } = S.detail;
   const me = S.boot.me;
   const isRaiser = s.RaisedBy === me.email;
-  const isAns = !isRaiser && (s.AssignedTo === me.email || (me.canAnswer && me.role === 'Partner'));
+  const isAns = !isRaiser && me.canAnswer;   // any Partner or Manager can answer any slip
   const lab = TYPE_INFO[s.Type] ? TYPE_INFO[s.Type].p : 'Probable answer';
   const v = S.detail.verdict;
   const cls = i => !v ? '' : (v === 'Both' || v === 'Option ' + i) ? 'right' : 'wrong';
@@ -876,11 +877,28 @@ function renderDrawer(focus) {
 }
 function raiserFirst(s) { return String(s.RaisedByName || 'Staff').split(' ')[0]; }
 
+/* FAQ helpers: keep client names out of the FAQ bank and suggest search keywords. */
+function stripClient(t, client) {
+  t = String(t || ''); client = String(client || '').trim();
+  if (!client) return t.trim();
+  const re = new RegExp(client.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'ig');
+  return t.replace(re, '').replace(/\s{2,}/g, ' ').replace(/^[\s\-:–—]+|[\s\-:–—]+$/g, '').trim() || t.trim();
+}
+function autoKeywords(s) {
+  const client = String(s.Client || '').toLowerCase();
+  const seen = new Set(), out = [];
+  toks((s.Title || '') + ' ' + (s.Question || '')).forEach(w => {
+    if (w.length < 3 || /^\d+$/.test(w) || w === 'client' || seen.has(w) || (client && client.includes(w))) return;
+    seen.add(w); out.push(w);
+  });
+  return out.slice(0, 12).join(', ');
+}
+
 function composer(s, isAns, isRaiser, closed) {
   if (closed) {
-    // Only the reviewer the slip was sent to, or a Partner, can re-open a closed slip.
+    // Only a Partner or Manager (not the person who raised it) can re-open a closed slip.
     const me = S.boot.me;
-    const canReopen = s.Status === 'Closed' && (s.AssignedTo === me.email || me.role === 'Partner');
+    const canReopen = s.Status === 'Closed' && me.canAnswer && !isRaiser;
     if (canReopen) return `<div class="compose"><div class="bar"><button class="btn" data-act="reopen">Re-open slip</button></div></div>`;
     if (isRaiser) return `<div class="compose"><p class="locked">${ic('lock')}This slip is closed. If you still need help, raise a new slip.</p></div>`;
     return '';
@@ -889,11 +907,11 @@ function composer(s, isAns, isRaiser, closed) {
     const cats = S.boot.categories;
     return `<div class="compose">
       <textarea id="rText" placeholder="Your answer / guidance for ${esc(raiserFirst(s))}…"></textarea>
-      <label class="chk"><input type="checkbox" id="faqAdd"> Save this Q&amp;A to the FAQ bank (answers repeat questions automatically)</label>
-      <div class="faqbox hide" id="faqFields">
-        <div class="f"><label>FAQ question (general, without client names)</label><input id="fa_q" value="${esc(s.Title)}"></div>
-        <div class="f"><label>FAQ answer</label><textarea id="fa_a" rows="3"></textarea></div>
-        <div class="grid" style="grid-template-columns:2fr 1fr;gap:12px"><div class="f"><label>Keywords (comma separated)</label><input id="fa_k" placeholder="e.g. tds, rent, 194i"></div>
+      <label class="chk"><input type="checkbox" id="faqAdd" checked> Save this answer to the FAQ bank for next time</label>
+      <div class="faqbox" id="faqFields">
+        <div class="f"><label>FAQ question (general, without client names)</label><input id="fa_q" value="${esc(stripClient(s.Title, s.Client))}"></div>
+        <div class="f"><label>FAQ answer (copied from your reply; edit if needed)</label><textarea id="fa_a" rows="3"></textarea></div>
+        <div class="grid" style="grid-template-columns:2fr 1fr;gap:12px"><div class="f"><label>Keywords (comma separated)</label><input id="fa_k" value="${esc(autoKeywords(s))}" placeholder="e.g. tds, rent, 194i"></div>
         <div class="f"><label>Category</label><select id="fa_c">${cats.map(c => `<option ${c === s.Category ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select></div></div>
       </div>
       <div class="bar" style="margin-top:12px"><button class="btn" data-act="reply" data-close="0">${ic('send')}Send reply</button><button class="btn pri" data-act="reply" data-close="1">${ic('check')}Reply &amp; close</button></div>
@@ -919,7 +937,12 @@ async function doReply(close) {
     if (S.detail.verdict) payload.verdict = S.detail.verdict;
     if (close && !S.detail.verdict) { toast('Mark which probable answer was right (or Neither) before closing.', true); return; }
     const fx = $('#faqAdd');
-    if (fx && fx.checked) payload.faq = { question: $('#fa_q').value, answer: $('#fa_a').value || text, keywords: $('#fa_k').value, category: $('#fa_c').value };
+    const faqAns = fx ? ($('#fa_a').value || text).trim() : '';
+    if (fx && fx.checked && faqAns.length >= 10 && $('#fa_q').value.trim().length >= 5) {
+      payload.faq = { question: $('#fa_q').value, answer: faqAns, keywords: $('#fa_k').value, category: $('#fa_c').value };
+    } else if (fx && !fx.checked) {
+      payload.faqSkip = true;   // reviewer chose not to save this one
+    }
   }
   if (!text.trim() && !close) { toast('Write a reply first.', true); return; }
   if (isAns && close && !text.trim()) { toast('Write your answer before closing.', true); return; }
@@ -1034,7 +1057,10 @@ document.addEventListener('click', async e => {
         const fq = $('#fa_q') && [$('#fa_q').value, $('#fa_a').value, $('#fa_k').value, $('#fa_c').value];
         renderDrawer();
         if (keep) $('#rText').value = keep;
-        if (chk) { $('#faqAdd').checked = true; $('#faqFields').classList.remove('hide'); [$('#fa_q').value, $('#fa_a').value, $('#fa_k').value, $('#fa_c').value] = fq; }
+        if (fx) {
+          $('#faqAdd').checked = chk; $('#faqFields').classList.toggle('hide', !chk);
+          if (fq) { [$('#fa_q').value, $('#fa_a').value, $('#fa_k').value, $('#fa_c').value] = fq; if (fq[1]) $('#fa_a').dataset.touched = '1'; }
+        }
       } break;
     case 'reply': await doReply(el.dataset.close === '1'); break;
     case 'withdraw': case 'reopen':
