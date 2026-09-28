@@ -1013,11 +1013,18 @@ function renderDrawer(focus) {
     : (s.Verdict ? `<div class="verd">Reviewer's verdict: <b>${esc(s.Verdict)}</b></div>` : '')}
   ${composer(s, isAns, isRaiser, closed)}`;
   if (focus) { const t = $('#rText'); if (t) t.focus(); }
+
+  /* Two-way live sync: "Your answer / guidance" box <-> "FAQ answer" box.
+     Type in either one and the other updates instantly. */
   const fx = $('#faqAdd');
   if (fx) {
-    const sync = () => { $('#faqFields').classList.toggle('hide', !fx.checked); if (fx.checked && !$('#fa_a').dataset.touched) $('#fa_a').value = $('#rText').value; };
-    fx.onchange = sync; $('#rText').addEventListener('input', sync);
-    $('#fa_a').addEventListener('input', e => e.target.dataset.touched = '1');
+    const rT = $('#rText'), fa = $('#fa_a');
+    fx.onchange = () => {
+      $('#faqFields').classList.toggle('hide', !fx.checked);
+      if (fx.checked) fa.value = rT.value;
+    };
+    rT.addEventListener('input', () => { fa.value = rT.value; });
+    fa.addEventListener('input', () => { rT.value = fa.value; });
   }
 }
 function raiserFirst(s) { return String(s.RaisedByName || 'Staff').split(' ')[0]; }
@@ -1055,7 +1062,7 @@ function composer(s, isAns, isRaiser, closed) {
       <label class="chk"><input type="checkbox" id="faqAdd" checked> Save this answer to the FAQ bank for next time</label>
       <div class="faqbox" id="faqFields">
         <div class="f"><label>FAQ question (general, without client names)</label><input id="fa_q" value="${esc(stripClient(s.Title, s.Client))}"></div>
-        <div class="f"><label>FAQ answer (copied from your reply; edit if needed)</label><textarea id="fa_a" rows="3"></textarea></div>
+        <div class="f"><label>FAQ answer (synced with your reply above: type in either box)</label><textarea id="fa_a" rows="3"></textarea></div>
         <div class="grid" style="grid-template-columns:2fr 1fr;gap:12px"><div class="f"><label>Keywords (comma separated)</label><input id="fa_k" value="${esc(autoKeywords(s))}" placeholder="e.g. tds, rent, 194i"></div>
         <div class="f"><label>Category</label><select id="fa_c">${cats.map(c => `<option ${c === s.Category ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select></div></div>
       </div>
@@ -1207,7 +1214,7 @@ document.addEventListener('click', async e => {
         if (keep) $('#rText').value = keep;
         if (fx) {
           $('#faqAdd').checked = chk; $('#faqFields').classList.toggle('hide', !chk);
-          if (fq) { [$('#fa_q').value, $('#fa_a').value, $('#fa_k').value, $('#fa_c').value] = fq; if (fq[1]) $('#fa_a').dataset.touched = '1'; }
+          if (fq) { [$('#fa_q').value, $('#fa_a').value, $('#fa_k').value, $('#fa_c').value] = fq; }
         }
       } break;
     case 'reply': await doReply(el.dataset.close === '1'); break;
