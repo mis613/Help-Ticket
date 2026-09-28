@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-<head><!-- redeploy -->
+<head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>AVA Help Desk</title>
@@ -177,9 +177,9 @@ h1{font-size:30px;margin:0 0 6px;font-weight:700;letter-spacing:-.4px;color:var(
 .prob .p.right{border-color:var(--green);background:var(--green-soft)}
 .prob .p.wrong{border-color:#f3c2c2;background:#fff7f7}
 .prob .p b{display:block;color:var(--amber);font-size:12px;letter-spacing:.4px;text-transform:uppercase;margin-bottom:4px}
-.verd{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 -24px 20px;padding:12px 24px;font-size:13px;color:var(--ink-2);
-  position:sticky;bottom:-20px;background:#fff;z-index:3;border-top:1px solid var(--line);box-shadow:0 -4px 10px rgba(16,35,58,.05)}
-.verd button{border:1px solid var(--line);background:#fff;border-radius:20px;padding:5px 13px;font-size:12.5px}
+.verd{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:14px 24px;font-size:13px;color:var(--ink-2);
+  border-top:1px solid var(--line);background:#fafbfd;flex:none}
+.verd button{border:1px solid var(--line);background:#fff;border-radius:20px;padding:6px 14px;font-size:12.5px}
 .verd button.on{background:var(--navy);color:#fff;border-color:var(--navy)}
 .lbl{font-size:12px;letter-spacing:.6px;text-transform:uppercase;color:var(--ink-3);font-weight:600;margin:0 0 8px}
 .thread{display:flex;flex-direction:column;gap:10px;margin-bottom:18px}
@@ -1002,8 +1002,6 @@ function renderDrawer(focus) {
     <div class="lbl">Question</div><div class="qbox">${esc(s.Question)}</div>
     <div class="lbl">${esc(raiserFirst(s))}'s two ${esc(lab.toLowerCase())}s</div>
     <div class="prob"><div class="p ${cls(1)}"><b>Option 1</b>${esc(s.Probable1)}</div><div class="p ${cls(2)}"><b>Option 2</b>${esc(s.Probable2)}</div></div>
-    ${isAns ? `<div class="verd">Which was right? ${['Option 1', 'Option 2', 'Both', 'Neither'].map(x => `<button class="${v === x ? 'on' : ''}" data-act="verdict" data-v="${x}">${x}</button>`).join('')}</div>`
-      : (s.Verdict ? `<div class="verd">Reviewer's verdict: <b>${esc(s.Verdict)}</b></div>` : '<div style="height:12px"></div>')}
     ${faq ? `<div class="faqhint">${ic('book')}Linked FAQ: ${esc(faq.question)}</div>` : ''}
     <div class="lbl">Conversation</div>
     <div class="thread">${replies.map(r => `<div class="msg ${esc(r.kind)}">${r.kind === 'System' ? `${esc(r.by)}: ${esc(r.text)} · ${ago(r.at)}` : `<div class="w">${esc(r.by)} · ${ago(r.at)}</div>${esc(r.text)}`}</div>`).join('')}</div>
@@ -1011,6 +1009,8 @@ function renderDrawer(focus) {
       <select id="reTo" style="border:1px solid var(--line);border-radius:8px;padding:6px">${others.map(a => `<option value="${esc(a.email)}">${esc(a.name)}</option>`).join('')}</select>
       <button class="btn sm" data-act="reassign">Reassign</button></div>` : ''}
   </div>
+  ${isAns ? `<div class="verd">Which was right? ${['Option 1', 'Option 2', 'Both', 'Neither'].map(x => `<button class="${v === x ? 'on' : ''}" data-act="verdict" data-v="${x}">${x}</button>`).join('')}</div>`
+    : (s.Verdict ? `<div class="verd">Reviewer's verdict: <b>${esc(s.Verdict)}</b></div>` : '')}
   ${composer(s, isAns, isRaiser, closed)}`;
   if (focus) { const t = $('#rText'); if (t) t.focus(); }
   const fx = $('#faqAdd');
